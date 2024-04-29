@@ -30,7 +30,7 @@ def build_network_two_track(section_name, conditions):
 
     # Load in the lengths and angles of the track circuit blocks
     # Note: zero degrees is directly eastwards, with positive values counter-clockwise and negative values clockwise
-    blocks, angles = np.loadtxt('data/rail_data/' + section_name + '_blocks_angles.txt', unpack=True, usecols=(0, 1))
+    blocks, angles = np.loadtxt("data/rail_data/" + section_name + "/" + section_name + "_blocks_angles.txt", unpack=True, usecols=(0, 1))
     n_blocks = int(len(blocks))  # Number of blocks in this section
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
@@ -102,6 +102,15 @@ def build_network_two_track(section_name, conditions):
     # "b" second
     sig_node_locs_power_b = sig_node_locs_b[0::2]
     sig_node_locs_relay_b = sig_node_locs_b[1::2]
+
+    # Save network node locations for later analysis
+    np.savez("nodes_"+section_name, n_nodes=n_nodes, n_nodes_trac=n_nodes_trac, trac_node_locs_a=trac_node_locs_a,
+             trac_node_locs_b=trac_node_locs_b, sig_node_locs_a=sig_node_locs_a, sig_node_locs_b=sig_node_locs_b,
+             cb_node_locs_a=cb_node_locs_a, cb_node_locs_b=cb_node_locs_b,
+             trac_node_locs_power_a=trac_node_locs_power_a, trac_node_locs_power_b=trac_node_locs_power_b,
+             trac_node_locs_relay_a=trac_node_locs_relay_a, trac_node_locs_relay_b=trac_node_locs_relay_b,
+             sig_node_locs_power_a=sig_node_locs_power_a, sig_node_locs_power_b=sig_node_locs_power_b,
+             sig_node_locs_relay_a=sig_node_locs_relay_a, sig_node_locs_relay_b=sig_node_locs_relay_b)
 
     # Calculate nodal parallel admittances
     yg = np.zeros(n_nodes)
