@@ -15,12 +15,12 @@ def build_network_two_track(section_name, conditions):
                   "r_power": 7.2,  # Track circuit power supply resistance (ohms)
                   "r_relay": 20,  # Track circuit relay resistance (ohms)
                   "r_cb": 1e-3,  # Cross bond resistance (ohms)
-                  "r_shunt": 251e-4,  # Shunt (axle) resistance (ohms)
+                  "r_axle": 251e-4,  # Axle resistance (ohms)
                   "i_power": 10 / 7.2,  # Track circuit power supply equivalent current source (amps)
                   "y_power": 1 / 7.2,  # Track circuit power supply admittance (siemens)
                   "y_relay": 1 / 20,  # Track circuit relay admittance (siemens)
                   "y_cb": 1 / 1e-3,  # Cross bond admittance (siemens)
-                  "y_shunt": 1 / 251e-4}  # Shunt (axle) admittance (siemens)
+                  "y_axle": 1 / 251e-4}  # Axle admittance (siemens)
 
     # Calculate the electrical characteristics of the rails
     gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig_"+conditions])
@@ -41,25 +41,28 @@ def build_network_two_track(section_name, conditions):
     # Since this is the base network with no trains added, the signalling rail sub blocks are equal to the blocks of
     # the route, and the traction return rail sub blocks are defined by the cross bond locations. Both directions of
     # travel have identical length sub block lengths, the differences in component configurations are handled later
-    sub_blocks_sig = blocks  # Signalling rail sub block lengths
+    sig_sub_blocks = blocks  # Signalling rail sub block lengths
     blocks_sum_cb = np.insert(blocks_sum_cb, 0, 0)
-    sub_blocks_trac = np.diff(blocks_sum_cb)  # Traction return rail sub block lengths
+    trac_sub_blocks = np.diff(blocks_sum_cb)  # Traction return rail sub block lengths
     # If cross bonds overlap with block boundaries, set the length of the sub block to be non-zero to avoid errors
-    if 0 in sub_blocks_trac:
-        sub_blocks_trac[np.argwhere(sub_blocks_trac == 0)] = 1e-10
+    if 0 in trac_sub_blocks:
+        trac_sub_blocks[np.argwhere(trac_sub_blocks == 0)] = 1e-10
     else:
         pass
 
+    # Save in a zip file to be used in the analysis
+    np.savez("sub_blocks_" + section_name, blocks_sum_cb=blocks_sum_cb, trac_sub_blocks=trac_sub_blocks, sig_sub_blocks=sig_sub_blocks)
+
     # Set up equivalent-pi parameters
-    ye_sig = 1 / (z0_sig * np.sinh(gamma_sig * sub_blocks_sig))  # Series admittance for signalling rail
-    ye_trac = 1 / (z0_trac * np.sinh(gamma_trac * sub_blocks_trac))  # Series admittance for traction return rail
-    yg_sig = 2 * ((np.cosh(gamma_sig * sub_blocks_sig) - 1) * (1 / (z0_sig * np.sinh(gamma_sig * sub_blocks_sig))))  # Parallel admittance for signalling rail
-    yg_trac = 2 * ((np.cosh(gamma_trac * sub_blocks_trac) - 1) * (1 / (z0_trac * np.sinh(gamma_trac * sub_blocks_trac))))  # Parallel admittance for traction return rail
+    ye_sig = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks))  # Series admittance for signalling rail
+    ye_trac = 1 / (z0_trac * np.sinh(gamma_trac * trac_sub_blocks))  # Series admittance for traction return rail
+    yg_sig = 2 * ((np.cosh(gamma_sig * sig_sub_blocks) - 1) * (1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks))))  # Parallel admittance for signalling rail
+    yg_trac = 2 * ((np.cosh(gamma_trac * trac_sub_blocks) - 1) * (1 / (z0_trac * np.sinh(gamma_trac * trac_sub_blocks))))  # Parallel admittance for traction return rail
 
     # Calculate numbers of nodes ready to use in indexing
     n_nodes_single = int(n_blocks * 3 + 1 + len(pos_cb))  # Number of nodes in a single direction of travel
     n_nodes = n_nodes_single * 2  # Number of nodes in the whole network (*2 for two-track)
-    n_nodes_trac = len(sub_blocks_trac) + 1  # Number of nodes in the traction return rail
+    n_nodes_trac = len(trac_sub_blocks) + 1  # Number of nodes in the traction return rail
 
     # Index of rail nodes in the traction return rail
     # Note: "a" and "b" are used to identify the opposite directions of travel in this network (two-track)
@@ -74,13 +77,13 @@ def build_network_two_track(section_name, conditions):
     # "a" first
     cb_node_locs = np.zeros(len(pos_cb))
     for i in range(0, len(pos_cb)):
-        cb_node_locs[i] = np.argwhere(np.cumsum(sub_blocks_trac) == pos_cb[i])[0] + 1
+        cb_node_locs[i] = np.argwhere(np.cumsum(trac_sub_blocks) == pos_cb[i])[0] + 1
     cb_node_locs = cb_node_locs.astype(int)
     cb_node_locs_a = trac_node_locs_a[cb_node_locs]
     # "b" second
     cb_node_locs = np.zeros(len(pos_cb))
     for i in range(0, len(pos_cb)):
-        cb_node_locs[i] = np.argwhere(np.cumsum(sub_blocks_trac) == pos_cb[i])[0] + 1
+        cb_node_locs[i] = np.argwhere(np.cumsum(trac_sub_blocks) == pos_cb[i])[0] + 1
     cb_node_locs = cb_node_locs.astype(int)
     cb_node_locs_b = trac_node_locs_b[cb_node_locs]
 
@@ -277,8 +280,8 @@ def build_network_two_track(section_name, conditions):
     # Note: Only the traction return rail has been split into sub blocks, so the signalling rail angles are equal to the
     # original block angles
     # "a" first
-    trac_angles_a = np.zeros(len(sub_blocks_trac))
-    cumsum_sb_a = np.cumsum(sub_blocks_trac)
+    trac_angles_a = np.zeros(len(trac_sub_blocks))
+    cumsum_sb_a = np.cumsum(trac_sub_blocks)
     n_b = 0
     for n_sb in range(0, len(cumsum_sb_a)):
         if cumsum_sb_a[n_sb] < blocks_sum[n_b]:
@@ -291,8 +294,8 @@ def build_network_two_track(section_name, conditions):
     sig_angles_a = angles
 
     # "b" second
-    trac_angles_b = np.zeros(len(sub_blocks_trac))
-    cumsum_sb_b = np.cumsum(sub_blocks_trac)
+    trac_angles_b = np.zeros(len(trac_sub_blocks))
+    cumsum_sb_b = np.cumsum(trac_sub_blocks)
     n_b = 0
     for n_sb in range(0, len(cumsum_sb_b)):
         if cumsum_sb_b[n_sb] < blocks_sum[n_b]:
@@ -309,6 +312,6 @@ def build_network_two_track(section_name, conditions):
     np.savez("angles_"+section_name, trac_angles_a=trac_angles_a, trac_angles_b=trac_angles_b, sig_angles_a=sig_angles_a, sig_angles_b=sig_angles_b)
 
 
-section = "glasgow_edinburgh_falkirk"
+section = "test"
 for cond in ["dry", "moderate", "wet"]:
     build_network_two_track(section_name=section, conditions=cond)
