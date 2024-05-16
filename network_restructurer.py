@@ -342,27 +342,93 @@ def reconfigure_network_two_track(section_name, conditions, axle_pos_a, axle_pos
             n += 1
 
     # Recalculate sum of parallel admittances into nodes
-    recalculate_y_sum_trac_a = np.zeros(len(recalculate_trac_node_a))
+    # "a" first
+    recalculate_y_sum_trac_a = np.zeros(len(recalculate_trac_node_a))  # Traction return rail
     n = 0
     for i in recalculate_trac_node_a:
         j = np.argwhere(all_trac_node_indices_a == i)
         # If it's the first node
         if i == all_trac_node_indices_a[0]:
-            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[j] + parameters["y_relay"] + ye_trac_a[j]
+            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_relay"] + ye_trac_a[j]
             n += 1
+        # If it's an axle node
         elif i in trac_axle_node_indices_a:
-            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[j] + parameters["y_axle"] + ye_trac_a[j - 1] + ye_trac_a[j]
+            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_axle"] + ye_trac_a[j - 1] + ye_trac_a[j]
             n += 1
+        # If it's a cross bond node
         elif i in cb_node_locs_a:
-            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[j] + parameters["y_cb"] + ye_trac_a[j - 1] + ye_trac_a[j]
+            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_cb"] + ye_trac_a[j - 1] + ye_trac_a[j]
             n += 1
+        # If it's the last node
         elif i == all_trac_node_indices_a[-1]:
-            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[j] + parameters["y_power"] + ye_trac_a[j - 1]
+            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_power"] + ye_trac_a[j - 1]
+            n += 1
+        # If it's a normal middle node
+        else:
+            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_power"] + parameters["y_relay"] + ye_trac_a[j - 1] + ye_trac_a[j]
+            n += 1
+    recalculate_y_sum_sig_a = np.zeros(len(recalculate_sig_node_a))  # Signalling rail
+    n = 0
+    for i in recalculate_sig_node_a:
+        j = np.argwhere(all_sig_node_indices_a == i)
+        # If it's a relay node
+        if i in sig_node_locs_relay_a:
+            recalculate_y_sum_sig_a[n] = recalculate_yg_sig_a[n] + parameters["y_relay"] + ye_sig_a[j]
+            n += 1
+        # If it's a power supply node
+        elif i in sig_node_locs_power_a:
+            recalculate_y_sum_sig_a[n] = recalculate_yg_sig_a[n] + parameters["y_power"] + ye_sig_a[j - 1]
+            n += 1
+        # If it's an axle node
+        elif i in sig_axle_node_indices_a:
+            recalculate_y_sum_sig_a[n] = recalculate_yg_sig_a[n] + parameters["y_axle"] + ye_sig_a[j - 1] + ye_sig_a[j]
             n += 1
         else:
-            recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[j] + parameters["y_power"] + parameters["y_relay"] + ye_trac_a[j - 1] + ye_trac_a[j]
-            n += 1
+            print("Error")
 
+    # "b" second
+    recalculate_y_sum_trac_b = np.zeros(len(recalculate_trac_node_b))  # Traction return rail
+    n = 0
+    for i in recalculate_trac_node_b:
+        j = np.argwhere(all_trac_node_indices_b == i)
+        # If it's the first node
+        if i == all_trac_node_indices_b[0]:
+            recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_power"] + ye_trac_b[j]
+            n += 1
+        # If it's an axle node
+        elif i in trac_axle_node_indices_b:
+            recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_axle"] + ye_trac_b[j - 1] + ye_trac_b[j]
+            n += 1
+        # If it's a cross bond node
+        elif i in cb_node_locs_b:
+            recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_cb"] + ye_trac_b[j - 1] + ye_trac_b[j]
+            n += 1
+        # If it's the last node
+        elif i == all_trac_node_indices_b[-1]:
+            recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_relay"] + ye_trac_b[j - 1]
+            n += 1
+        # If it's a normal middle node
+        else:
+            recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_power"] + parameters["y_relay"] + ye_trac_b[j - 1] + ye_trac_b[j]
+            n += 1
+    recalculate_y_sum_sig_b = np.zeros(len(recalculate_sig_node_b))  # Signalling rail
+    n = 0
+    for i in recalculate_sig_node_b:
+        j = np.argwhere(all_sig_node_indices_b == i)
+        # If it's a relay node
+        if i in sig_node_locs_relay_b:
+            recalculate_y_sum_sig_b[n] = recalculate_yg_sig_b[n] + parameters["y_relay"] + ye_sig_b[j - 1]
+            n += 1
+        # If it's a power supply node
+        elif i in sig_node_locs_power_b:
+            recalculate_y_sum_sig_b[n] = recalculate_yg_sig_b[n] + parameters["y_power"] + ye_sig_b[j]
+            n += 1
+        # If it's an axle node
+        elif i in sig_axle_node_indices_b:
+            recalculate_y_sum_sig_b[n] = recalculate_yg_sig_b[n] + parameters["y_axle"] + ye_sig_b[j - 1] + ye_sig_b[j]
+            n += 1
+        else:
+            print("Error")
 
     pass
 
