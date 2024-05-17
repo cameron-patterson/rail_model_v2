@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, eys):
@@ -25,26 +26,20 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     # Load in section network sub block lengths and angles
     sub_block_lengths = np.load("data\\network_parameters\\" + section_name + "\\sub_blocks_" + section_name + ".npz")
     trac_node_positions = sub_block_lengths["blocks_sum_cb"]
-    #trac_sub_blocks = sub_block_lengths["trac_sub_blocks"]
     sig_sub_blocks = sub_block_lengths["sig_sub_blocks"]
     sub_block_angles = np.load("data\\network_parameters\\" + section_name + "\\angles_" + section_name + ".npz")
-    trac_angles_a = sub_block_angles["trac_angles_a"]
-    trac_angles_b = sub_block_angles["trac_angles_b"]
     sig_angles_a = sub_block_angles["sig_angles_a"]
     sig_angles_b = sub_block_angles["sig_angles_b"]
 
     # Load in section network node indices
     network_nodes = np.load("data\\network_parameters\\" + section_name + "\\nodes_" + section_name + ".npz")
     n_nodes = network_nodes["n_nodes"]
-    #n_nodes_trac = network_nodes["n_nodes_trac"]
     trac_node_locs_a = network_nodes["trac_node_locs_a"]
     trac_node_locs_b = network_nodes["trac_node_locs_b"]
     sig_node_locs_a = network_nodes["sig_node_locs_a"]
     sig_node_locs_b = network_nodes["sig_node_locs_b"]
     cb_node_locs_a = network_nodes["cb_node_locs_a"]
     cb_node_locs_b = network_nodes["cb_node_locs_b"]
-    trac_node_locs_power_a = network_nodes["trac_node_locs_power_a"]
-    trac_node_locs_power_b = network_nodes["trac_node_locs_power_b"]
     trac_node_locs_relay_a = network_nodes["trac_node_locs_relay_a"]
     trac_node_locs_relay_b = network_nodes["trac_node_locs_relay_b"]
     sig_node_locs_power_a = network_nodes["sig_node_locs_power_a"]
@@ -58,7 +53,7 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig_" + conditions])
     z0_trac = np.sqrt(parameters["z_trac"] / parameters["y_trac_" + conditions])
 
-    # Create dictionary containing each node's index and its position along the rails
+    # Create dictionary tracaining each node's index and its position along the rails
     trac_node_indices_a = np.copy(trac_node_locs_a)
     trac_node_positions_a = np.copy(trac_node_positions)
 
@@ -249,7 +244,7 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     # Calculate the length of the sub blocks
     trac_sub_blocks_a = np.diff(all_trac_node_positions_sorted_a)
     sig_sub_blocks_a = np.diff(all_sig_node_positions_sorted_a)
-    sig_sub_blocks_a[sig_sub_blocks_a == 0] = np.nan  # Sub blocks with length zero on the signalling rail indicate insulating rail joints, these need to be nans
+    sig_sub_blocks_a[sig_sub_blocks_a == 0] = np.nan  # Sub blocks with length zero on the signalling rail indicate sigulating rail joints, these need to be nans
     trac_sub_blocks_b = np.diff(all_trac_node_positions_sorted_b)
     sig_sub_blocks_b = np.diff(all_sig_node_positions_sorted_b)
     sig_sub_blocks_b[sig_sub_blocks_b == 0] = np.nan
@@ -461,86 +456,94 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     sig_sb_angles_b = sig_angles_b[block_indices_sig_b]
 
     # Currents
-    i_relays_all_a = np.zeros([len(exs), len(sig_angles_a)])
-    i_relays_all_b = np.zeros([len(exs), len(sig_angles_a)])
+    i_relays_all_a = np.zeros([len(exs), len(trac_node_locs_relay_a)])
+    i_relays_all_b = np.zeros([len(exs), len(trac_node_locs_relay_b)])
     for es in range(0, len(exs)):
         # Set up current matrix
-        j_matrix = np.zeros(n_nodes)
+        j_matrix = np.zeros(n_nodes_restructured)
         ex = exs[es]
         ey = eys[es]
-
         # "a" first
-        e_x_par_trac_a = ex * np.cos(0.5 * np.pi - trac_angles_a)
-        e_y_par_trac_a = ey * np.cos(trac_angles_a)
-        e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a
-        e_x_par_sig_a = ex * np.cos(0.5 * np.pi - sig_angles_a)
-        e_y_par_sig_a = ey * np.cos(sig_angles_a)
+        e_x_par_trac_a = ex * np.cos(0.5 * np.pi - trac_sb_angles_a)  # Component of Ex parallel to traction return rail of "a"
+        e_y_par_trac_a = ey * np.cos(trac_sb_angles_a)  # Component of Ey parallel to traction return rail of "a"
+        e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a  # Component of E parallel to traction return rail of "a"
+        e_x_par_sig_a = ex * np.cos(0.5 * np.pi - sig_sb_angles_a)  # Same for signalling rail
+        e_y_par_sig_a = ey * np.cos(sig_sb_angles_a)
         e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
-        i_sig_a = e_par_sig_a / parameters["z_sig"]
-        i_trac_a = e_par_trac_a / parameters["z_trac"]
-
+        i_trac_a = e_par_trac_a / parameters["z_trac"]  # Equivalent current source for the traction return rail
+        i_sig_a = e_par_sig_a / parameters["z_sig"]  # Same for the signalling rail
         # "b" second
-        e_x_par_trac_b = ex * np.cos(0.5 * np.pi - trac_angles_b)
-        e_y_par_trac_b = ey * np.cos(trac_angles_b)
+        e_x_par_trac_b = ex * np.cos(0.5 * np.pi - trac_sb_angles_b)
+        e_y_par_trac_b = ey * np.cos(trac_sb_angles_b)
         e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
-        e_x_par_sig_b = ex * np.cos(0.5 * np.pi - sig_angles_b)
-        e_y_par_sig_b = ey * np.cos(sig_angles_b)
+        e_x_par_sig_b = ex * np.cos(0.5 * np.pi - sig_sb_angles_b)
+        e_y_par_sig_b = ey * np.cos(sig_sb_angles_b)
         e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
         i_sig_b = e_par_sig_b / parameters["z_sig"]
         i_trac_b = e_par_trac_b / parameters["z_trac"]
 
-        # "a" first
-        index_sb = np.arange(0, n_nodes_trac, 1)
-        # Traction return rail first node
+        # 'a' first
+        index_sb = np.arange(0, len(all_trac_node_indices_a), 1)
+        # continuous rail first node
         j_matrix[trac_node_locs_a[0]] = -i_trac_a[0]
-        # Traction return rail centre nodes
+        # continuous rail centre nodes
         for i in index_sb[1:-1]:
-            pos = trac_node_locs_a[i]
+            pos = all_trac_node_indices_a[i]
             if pos in cb_node_locs_a:
                 j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
-            elif pos not in cb_node_locs_a:
+            elif pos in trac_axle_node_indices_a:
+                j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
+            elif (pos not in cb_node_locs_a) and (pos not in trac_axle_node_indices_a):
                 j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i] - parameters["i_power"]
             else:
-                print("Error")
-        # Traction return rail last node
+                print('Error with trac a j_matrix')
+        # continuous rail last node
         j_matrix[trac_node_locs_a[-1]] = i_trac_a[-1] - parameters["i_power"]
-        # Signalling rail nodes
+        # insulated rail nodes
         n_sb = 0
-        for i in sig_node_locs_a:
+        for i in all_sig_node_indices_a:
             if i in sig_node_locs_relay_a:
                 j_matrix[i] = -i_sig_a[n_sb]
             elif i in sig_node_locs_power_a:
                 j_matrix[i] = i_sig_a[n_sb] + parameters["i_power"]
                 n_sb = n_sb + 1
+            elif i in sig_axle_node_indices_a:
+                j_matrix[i] = i_sig_a[n_sb] - i_sig_a[n_sb + 1]
+                n_sb = n_sb + 1
             else:
-                print("Error")
+                print('Error with sig a j_matrix')
 
-        # "b" second
-        index_sb = np.arange(0, n_nodes_trac, 1)
-        # Traction return rail first node
+        # 'b' second
+        index_sb = np.arange(0, len(all_trac_node_indices_b), 1)
+        # continuous rail first node
         j_matrix[trac_node_locs_b[0]] = i_trac_b[0] - parameters["i_power"]
-        # Traction return rail centre nodes
+        # continuous rail centre nodes
         for i in index_sb[1:-1]:
-            pos = trac_node_locs_b[i]
+            pos = all_trac_node_indices_b[i]
             if pos in cb_node_locs_b:
                 j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
-            elif pos not in cb_node_locs_b:
+            elif pos in trac_axle_node_indices_b:
+                j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
+            elif (pos not in cb_node_locs_b) and (pos not in trac_axle_node_indices_b):
                 j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1] - parameters["i_power"]
             else:
-                print("Error")
-        # Traction return rail last node
+                print('Error with trac b j_matrix')
+        # continuous rail last node
         j_matrix[trac_node_locs_b[-1]] = -i_trac_b[-1]
 
-        # Signalling rail nodes
+        # insulated rail nodes
         n_sb = 0
-        for i in sig_node_locs_b:
+        for i in all_sig_node_indices_b:
             if i in sig_node_locs_power_b:
                 j_matrix[i] = parameters["i_power"] + i_sig_b[n_sb]
             elif i in sig_node_locs_relay_b:
                 j_matrix[i] = -i_sig_b[n_sb]
                 n_sb = n_sb + 1
+            elif i in sig_axle_node_indices_b:
+                j_matrix[i] = i_sig_b[n_sb + 1] - i_sig_b[n_sb]
+                n_sb = n_sb + 1
             else:
-                print("Error")
+                print('Error with sig b j_matrix')
 
         # Calculate voltage matrix
         # Calculate inverse of admittance matrix
@@ -569,9 +572,21 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     return i_relays_all_a, i_relays_all_b
 
 
-axle_positions = np.load("axle_positions.npz")
+axle_positions = np.load("axle_positions_at_end_ge.npz")
 axle_positions_a = axle_positions["axle_pos_a"]
 axle_positions_b = axle_positions["axle_pos_b"]
-ex = np.array([0])
+ex = np.arange([0])
 ey = np.array([0])
-wrong_side_two_track("test", "moderate", axle_positions_a, axle_positions_b, ex, ey)
+
+for i in range(0, 100):
+    ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
+    print(i)
+
+#fig, ax = plt.subplots(2, 1)
+#ax[0].plot(ia[0], '.')
+#ax[0].axhline(0.081, c="g")
+#ax[0].axhline(0.055, c='r')
+#ax[1].plot(ib[0], '.')
+#ax[1].axhline(0.081, c="g")
+#ax[1].axhline(0.055, c='r')
+#plt.show()

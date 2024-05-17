@@ -1,12 +1,12 @@
 import numpy as np
 
 
-def generate_axle_positions_two_track():
+def generate_axle_positions_two_track(start_positions_a, start_positions_b):
     # Input train configurations here
-    start_positions_a = np.array([])  # The position of the front most axle of the trains in direction a
-    train_lengths_a = np.array([])  # The number of carriages in the trains in direction a
-    start_positions_b = np.array([0.799])  # The position of the front most axle of the trains in direction b
-    train_lengths_b = np.array([2])  # The number of carriages in the trains in direction b
+    #train_lengths_a = np.array([])  # The number of carriages in the trains in direction a
+    train_lengths_a = np.full(len(start_positions_a), 8)  # ALT: for if all trains are the same length
+    #train_lengths_b = np.array([])
+    train_lengths_b = np.full(len(start_positions_b), 8)
 
     axle_pos_a = []
     for n_spa in range(0, len(start_positions_a)):
@@ -26,9 +26,11 @@ def generate_axle_positions_two_track():
         axle_locs = axle_locs / 1000
         axle_pos_b.append(start_positions_b[n_spa] + axle_locs)  # Note: axle_locs is added to start_positions_b since the trains are travelling in the opposite direction and axles towards the end of the train are further along the line from the start
 
-    #np.savez("axle_positions", axle_pos_a=axle_pos_a, axle_pos_b=axle_pos_b)
-    print(axle_pos_a)
-    print(axle_pos_b)
+    np.savez("axle_positions_at_end_ge", axle_pos_a=axle_pos_a, axle_pos_b=axle_pos_b)
 
 
-generate_axle_positions_two_track()
+at_end_pos_ge = np.load("at_end_axle_pos_glasgow_edinburgh_falkirk.npz")
+starts_a = at_end_pos_ge["at_end_axle_pos_a"]
+starts_b = at_end_pos_ge["at_end_axle_pos_b"]
+
+generate_axle_positions_two_track(starts_a, starts_b)
