@@ -30,7 +30,7 @@ def generate_axle_positions_two_track(start_positions_a, start_positions_b):
 
 
 at_end_pos_ge = np.load("at_end_axle_pos_glasgow_edinburgh_falkirk.npz")
-starts_a = at_end_pos_ge["at_end_axle_pos_a"]
-starts_b = at_end_pos_ge["at_end_axle_pos_b"]
+starts_a = at_end_pos_ge["at_end_axle_pos_a"][12:14]
+starts_b = at_end_pos_ge["at_end_axle_pos_b"][25:27]
 
 generate_axle_positions_two_track(starts_a, starts_b)

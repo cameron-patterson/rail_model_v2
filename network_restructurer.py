@@ -23,60 +23,53 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
                   "y_cb": 1 / 1e-3,  # Cross bond admittance (siemens)
                   "y_axle": 1 / 251e-4}  # Axle admittance (siemens)
 
-    # Load in section network sub block lengths and angles
+    # Load in network sub block lengths and angles for the chosen section
     sub_block_lengths = np.load("data\\network_parameters\\" + section_name + "\\sub_blocks_" + section_name + ".npz")
-    trac_node_positions = sub_block_lengths["blocks_sum_cb"]
-    sig_sub_blocks = sub_block_lengths["sig_sub_blocks"]
-    sub_block_angles = np.load("data\\network_parameters\\" + section_name + "\\angles_" + section_name + ".npz")
-    sig_angles_a = sub_block_angles["sig_angles_a"]
-    sig_angles_b = sub_block_angles["sig_angles_b"]
+    trac_node_positions = sub_block_lengths["blocks_sum_cb"]  # Positions of nodes along the traction return rail (km)
+    sig_block_lengths = sub_block_lengths["sig_sub_blocks"]  # Lengths of the signalling rail for each block (km)
+    block_angles = np.load("data\\network_parameters\\" + section_name + "\\angles_" + section_name + ".npz")
+    block_angles_a = block_angles["sig_angles_a"]  # Angles of each block in the "a" direction
+    block_angles_b = block_angles["sig_angles_b"]  # Angles of each block in the "b" direction (180 degrees from "a")
 
-    # Load in section network node indices
+    # Load in network nodal indices for the chosen section
     network_nodes = np.load("data\\network_parameters\\" + section_name + "\\nodes_" + section_name + ".npz")
-    n_nodes = network_nodes["n_nodes"]
-    trac_node_locs_a = network_nodes["trac_node_locs_a"]
-    trac_node_locs_b = network_nodes["trac_node_locs_b"]
-    sig_node_locs_a = network_nodes["sig_node_locs_a"]
-    sig_node_locs_b = network_nodes["sig_node_locs_b"]
-    cb_node_locs_a = network_nodes["cb_node_locs_a"]
-    cb_node_locs_b = network_nodes["cb_node_locs_b"]
-    trac_node_locs_relay_a = network_nodes["trac_node_locs_relay_a"]
-    trac_node_locs_relay_b = network_nodes["trac_node_locs_relay_b"]
-    sig_node_locs_power_a = network_nodes["sig_node_locs_power_a"]
-    sig_node_locs_power_b = network_nodes["sig_node_locs_power_b"]
-    sig_node_locs_relay_a = network_nodes["sig_node_locs_relay_a"]
-    sig_node_locs_relay_b = network_nodes["sig_node_locs_relay_b"]
+    n_nodes = network_nodes["n_nodes"]  # Total number of nodes in the section
+    trac_node_indices_a = network_nodes["trac_node_locs_a"]  # Traction return rail node indices for "a" direction
+    trac_node_indices_b = network_nodes["trac_node_locs_b"]  # Traction return rail node indices for "b" direction
+    sig_node_indices_a = network_nodes["sig_node_locs_a"]  # Signalling rail node indices for "a" direction
+    sig_node_indices_b = network_nodes["sig_node_locs_b"]  # Signalling rail node indices for "b" direction
+    cb_node_indices_a = network_nodes["cb_node_locs_a"]  # Cross bond node indices for "a" direction
+    cb_node_indices_b = network_nodes["cb_node_locs_b"]  # Cross bond node indices for "b" direction
+    trac_node_indices_relay_a = network_nodes["trac_node_locs_relay_a"]  # Traction return rail relay node indices for "a" direction
+    trac_node_indices_relay_b = network_nodes["trac_node_locs_relay_b"]  # Traction return rail relay node indices for "b" direction
+    sig_node_indices_power_a = network_nodes["sig_node_locs_power_a"]  # Traction return rail power supply node indices for "a" direction
+    sig_node_indices_power_b = network_nodes["sig_node_locs_power_b"]  # Traction return rail power supply node indices for "b" direction
+    sig_node_indices_relay_a = network_nodes["sig_node_locs_relay_a"]  # Signalling rail relay node indices for "a" direction
+    sig_node_indices_relay_b = network_nodes["sig_node_locs_relay_b"]  # Signalling rail relay node indices for "b" direction
 
     # Calculate the electrical characteristics of the rails
-    gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig_" + conditions])
-    gamma_trac = np.sqrt(parameters["z_trac"] * parameters["y_trac_" + conditions])
-    z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig_" + conditions])
-    z0_trac = np.sqrt(parameters["z_trac"] / parameters["y_trac_" + conditions])
+    gamma_trac = np.sqrt(parameters["z_trac"] * parameters["y_trac_" + conditions])  # Propagation constant of the traction return rail (ohms)
+    gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig_" + conditions])  # Propagation constant of the signalling rail (ohms)
+    z0_trac = np.sqrt(parameters["z_trac"] / parameters["y_trac_" + conditions])  # Characteristic impedance of the traction return rail (km^-1)
+    z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig_" + conditions])  # Characteristic impedance of the signalling rail (km^-1)
 
-    # Create dictionary tracaining each node's index and its position along the rails
-    trac_node_indices_a = np.copy(trac_node_locs_a)
-    trac_node_positions_a = np.copy(trac_node_positions)
-
-    sig_sub_blocks_sums = np.cumsum(sig_sub_blocks)
-    sig_node_indices_a = np.copy(sig_node_locs_a)
-    sig_node_positions_a = np.zeros(len(sig_node_locs_a))
+    # Create dictionary containing each node's index and its position along the rails
+    sig_sub_blocks_sums = np.cumsum(sig_block_lengths)  # The
+    sig_node_indices_a = np.copy(sig_node_indices_a)
+    sig_node_positions_a = np.zeros(len(sig_node_indices_a))
     sig_node_positions_a[0] = 0
     n_sb = 0
-    for i in range(1, len(sig_node_locs_a)-1, 2):
+    for i in range(1, len(sig_node_indices_a)-1, 2):
         sig_node_positions_a[i] = sig_sub_blocks_sums[n_sb]
         sig_node_positions_a[i+1] = sig_sub_blocks_sums[n_sb]
         n_sb += 1
     sig_node_positions_a[-1] = sig_sub_blocks_sums[-1]
 
-    trac_node_indices_b = np.copy(trac_node_locs_b)
-    trac_node_positions_b = np.copy(trac_node_positions)
-
-    sig_sub_blocks_sums = np.cumsum(sig_sub_blocks)
-    sig_node_indices_b = np.copy(sig_node_locs_b)
-    sig_node_positions_b = np.zeros(len(sig_node_locs_b))
+    sig_node_indices_b = np.copy(sig_node_indices_b)
+    sig_node_positions_b = np.zeros(len(sig_node_indices_b))
     sig_node_positions_b[0] = 0
     n_sb = 0
-    for i in range(1, len(sig_node_locs_b) - 1, 2):
+    for i in range(1, len(sig_node_indices_b) - 1, 2):
         sig_node_positions_b[i] = sig_sub_blocks_sums[n_sb]
         sig_node_positions_b[i + 1] = sig_sub_blocks_sums[n_sb]
         n_sb += 1
@@ -108,9 +101,9 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
         pass
 
     if len(axle_pos_a) != 0 and len(axle_pos_b) != 0:
-        all_trac_node_positions_a = np.hstack((trac_node_positions_a, trac_axle_node_positions_a))
+        all_trac_node_positions_a = np.hstack((trac_node_positions, trac_axle_node_positions_a))
         all_sig_node_positions_a = np.hstack((sig_node_positions_a, sig_axle_node_positions_a))
-        all_trac_node_positions_b = np.hstack((trac_node_positions_b, trac_axle_node_positions_b))
+        all_trac_node_positions_b = np.hstack((trac_node_positions, trac_axle_node_positions_b))
         all_sig_node_positions_b = np.hstack((sig_node_positions_b, sig_axle_node_positions_b))
         all_trac_node_indices_a = np.hstack((trac_node_indices_a, trac_axle_node_indices_a))
         all_sig_node_indices_a = np.hstack((sig_node_indices_a, sig_axle_node_indices_a))
@@ -118,9 +111,9 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
         all_sig_node_indices_b = np.hstack((sig_node_indices_b, sig_axle_node_indices_b))
 
     elif len(axle_pos_a) != 0 and len(axle_pos_b) == 0:
-        all_trac_node_positions_a = np.hstack((trac_node_positions_a, trac_axle_node_positions_a))
+        all_trac_node_positions_a = np.hstack((trac_node_positions, trac_axle_node_positions_a))
         all_sig_node_positions_a = np.hstack((sig_node_positions_a, sig_axle_node_positions_a))
-        all_trac_node_positions_b = np.copy(trac_node_positions_b)
+        all_trac_node_positions_b = np.copy(trac_node_positions)
         all_sig_node_positions_b = np.copy(sig_node_positions_b)
         all_trac_node_indices_a = np.hstack((trac_node_indices_a, trac_axle_node_indices_a))
         all_sig_node_indices_a = np.hstack((sig_node_indices_a, sig_axle_node_indices_a))
@@ -128,9 +121,9 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
         all_sig_node_indices_b = np.copy(sig_node_indices_b)
 
     else:
-        all_trac_node_positions_a = np.copy(trac_node_positions_a)
+        all_trac_node_positions_a = np.copy(trac_node_positions)
         all_sig_node_positions_a = np.copy(sig_node_positions_a)
-        all_trac_node_positions_b = np.hstack((trac_node_positions_b, trac_axle_node_positions_b))
+        all_trac_node_positions_b = np.hstack((trac_node_positions, trac_axle_node_positions_b))
         all_sig_node_positions_b = np.hstack((sig_node_positions_b, sig_axle_node_positions_b))
         all_trac_node_indices_a = np.copy(trac_node_indices_a)
         all_sig_node_indices_a = np.copy(sig_node_indices_a)
@@ -268,11 +261,11 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     for i in recalculate_trac_node_a:
         j = np.argwhere(all_trac_node_indices_a == i)
         # If it's the first node
-        if i == trac_node_locs_a[0]:
+        if i == trac_node_indices_a[0]:
             recalculate_yg_trac_a[n] = 0.5 * yg_trac_a[j]
             n += 1
         # If it's the last node
-        elif i == trac_node_locs_a[-1]:
+        elif i == trac_node_indices_a[-1]:
             recalculate_yg_trac_a[n] = 0.5 * yg_trac_a[j - 1]
         # Otherwise
         else:
@@ -282,10 +275,10 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     n = 0
     for i in recalculate_sig_node_a:
         j = np.argwhere(all_sig_node_indices_a == i)
-        if i in sig_node_locs_relay_a:
+        if i in sig_node_indices_relay_a:
             recalculate_yg_sig_a[n] = 0.5 * yg_sig_a[j]
             n += 1
-        elif i in sig_node_locs_power_a:
+        elif i in sig_node_indices_power_a:
             recalculate_yg_sig_a[n] = 0.5 * yg_sig_a[j - 1]
             n += 1
         else:
@@ -297,11 +290,11 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     for i in recalculate_trac_node_b:
         j = np.argwhere(all_trac_node_indices_b == i)
         # If it's the first node
-        if i == trac_node_locs_b[0]:
+        if i == trac_node_indices_b[0]:
             recalculate_yg_trac_b[n] = 0.5 * yg_trac_b[j]
             n += 1
         # If it's the last node
-        elif i == trac_node_locs_b[-1]:
+        elif i == trac_node_indices_b[-1]:
             recalculate_yg_trac_b[n] = 0.5 * yg_trac_b[j - 1]
         # Otherwise
         else:
@@ -311,10 +304,10 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     n = 0
     for i in recalculate_sig_node_b:
         j = np.argwhere(all_sig_node_indices_b == i)
-        if i in sig_node_locs_power_b:
+        if i in sig_node_indices_power_b:
             recalculate_yg_sig_b[n] = 0.5 * yg_sig_b[j]
             n += 1
-        elif i in sig_node_locs_relay_b:
+        elif i in sig_node_indices_relay_b:
             recalculate_yg_sig_b[n] = 0.5 * yg_sig_b[j - 1]
             n += 1
         else:
@@ -336,7 +329,7 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
             recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_axle"] + ye_trac_a[j - 1] + ye_trac_a[j]
             n += 1
         # If it's a cross bond node
-        elif i in cb_node_locs_a:
+        elif i in cb_node_indices_a:
             recalculate_y_sum_trac_a[n] = recalculate_yg_trac_a[n] + parameters["y_cb"] + ye_trac_a[j - 1] + ye_trac_a[j]
             n += 1
         # If it's the last node
@@ -352,11 +345,11 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     for i in recalculate_sig_node_a:
         j = np.argwhere(all_sig_node_indices_a == i)
         # If it's a relay node
-        if i in sig_node_locs_relay_a:
+        if i in sig_node_indices_relay_a:
             recalculate_y_sum_sig_a[n] = recalculate_yg_sig_a[n] + parameters["y_relay"] + ye_sig_a[j]
             n += 1
         # If it's a power supply node
-        elif i in sig_node_locs_power_a:
+        elif i in sig_node_indices_power_a:
             recalculate_y_sum_sig_a[n] = recalculate_yg_sig_a[n] + parameters["y_power"] + ye_sig_a[j - 1]
             n += 1
         # If it's an axle node
@@ -379,7 +372,7 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
             recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_axle"] + ye_trac_b[j - 1] + ye_trac_b[j]
             n += 1
         # If it's a cross bond node
-        elif i in cb_node_locs_b:
+        elif i in cb_node_indices_b:
             recalculate_y_sum_trac_b[n] = recalculate_yg_trac_b[n] + parameters["y_cb"] + ye_trac_b[j - 1] + ye_trac_b[j]
             n += 1
         # If it's the last node
@@ -395,11 +388,11 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     for i in recalculate_sig_node_b:
         j = np.argwhere(all_sig_node_indices_b == i)
         # If it's a relay node
-        if i in sig_node_locs_relay_b:
+        if i in sig_node_indices_relay_b:
             recalculate_y_sum_sig_b[n] = recalculate_yg_sig_b[n] + parameters["y_relay"] + ye_sig_b[j - 1]
             n += 1
         # If it's a power supply node
-        elif i in sig_node_locs_power_b:
+        elif i in sig_node_indices_power_b:
             recalculate_y_sum_sig_b[n] = recalculate_yg_sig_b[n] + parameters["y_power"] + ye_sig_b[j]
             n += 1
         # If it's an axle node
@@ -443,21 +436,21 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     # "a" first
     cumsum_trac_sb_a = np.cumsum(trac_sub_blocks_a)
     block_indices_trac_a = np.searchsorted(sig_sub_blocks_sums, cumsum_trac_sb_a)
-    trac_sb_angles_a = sig_angles_a[block_indices_trac_a]
+    trac_sb_angles_a = block_angles_a[block_indices_trac_a]
     cumsum_sig_sb_a = np.cumsum(sig_sub_blocks_a[~np.isnan(sig_sub_blocks_a)])
     block_indices_sig_a = np.searchsorted(sig_sub_blocks_sums, cumsum_sig_sb_a)
-    sig_sb_angles_a = sig_angles_a[block_indices_sig_a]
+    sig_sb_angles_a = block_angles_a[block_indices_sig_a]
     # "b" second
     cumsum_trac_sb_b = np.cumsum(trac_sub_blocks_b)
     block_indices_trac_b = np.searchsorted(sig_sub_blocks_sums, cumsum_trac_sb_b)
-    trac_sb_angles_b = sig_angles_b[block_indices_trac_b]
+    trac_sb_angles_b = block_angles_b[block_indices_trac_b]
     cumsum_sig_sb_b = np.cumsum(sig_sub_blocks_b[~np.isnan(sig_sub_blocks_b)])
     block_indices_sig_b = np.searchsorted(sig_sub_blocks_sums, cumsum_sig_sb_b)
-    sig_sb_angles_b = sig_angles_b[block_indices_sig_b]
+    sig_sb_angles_b = block_angles_b[block_indices_sig_b]
 
     # Currents
-    i_relays_all_a = np.zeros([len(exs), len(trac_node_locs_relay_a)])
-    i_relays_all_b = np.zeros([len(exs), len(trac_node_locs_relay_b)])
+    i_relays_all_a = np.zeros([len(exs), len(trac_node_indices_relay_a)])
+    i_relays_all_b = np.zeros([len(exs), len(trac_node_indices_relay_b)])
     for es in range(0, len(exs)):
         # Set up current matrix
         j_matrix = np.zeros(n_nodes_restructured)
@@ -485,26 +478,26 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
         # 'a' first
         index_sb = np.arange(0, len(all_trac_node_indices_a), 1)
         # continuous rail first node
-        j_matrix[trac_node_locs_a[0]] = -i_trac_a[0]
+        j_matrix[trac_node_indices_a[0]] = -i_trac_a[0]
         # continuous rail centre nodes
         for i in index_sb[1:-1]:
             pos = all_trac_node_indices_a[i]
-            if pos in cb_node_locs_a:
+            if pos in cb_node_indices_a:
                 j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
             elif pos in trac_axle_node_indices_a:
                 j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
-            elif (pos not in cb_node_locs_a) and (pos not in trac_axle_node_indices_a):
+            elif (pos not in cb_node_indices_a) and (pos not in trac_axle_node_indices_a):
                 j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i] - parameters["i_power"]
             else:
                 print('Error with trac a j_matrix')
         # continuous rail last node
-        j_matrix[trac_node_locs_a[-1]] = i_trac_a[-1] - parameters["i_power"]
+        j_matrix[trac_node_indices_a[-1]] = i_trac_a[-1] - parameters["i_power"]
         # insulated rail nodes
         n_sb = 0
         for i in all_sig_node_indices_a:
-            if i in sig_node_locs_relay_a:
+            if i in sig_node_indices_relay_a:
                 j_matrix[i] = -i_sig_a[n_sb]
-            elif i in sig_node_locs_power_a:
+            elif i in sig_node_indices_power_a:
                 j_matrix[i] = i_sig_a[n_sb] + parameters["i_power"]
                 n_sb = n_sb + 1
             elif i in sig_axle_node_indices_a:
@@ -516,27 +509,27 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
         # 'b' second
         index_sb = np.arange(0, len(all_trac_node_indices_b), 1)
         # continuous rail first node
-        j_matrix[trac_node_locs_b[0]] = i_trac_b[0] - parameters["i_power"]
+        j_matrix[trac_node_indices_b[0]] = i_trac_b[0] - parameters["i_power"]
         # continuous rail centre nodes
         for i in index_sb[1:-1]:
             pos = all_trac_node_indices_b[i]
-            if pos in cb_node_locs_b:
+            if pos in cb_node_indices_b:
                 j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
             elif pos in trac_axle_node_indices_b:
                 j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
-            elif (pos not in cb_node_locs_b) and (pos not in trac_axle_node_indices_b):
+            elif (pos not in cb_node_indices_b) and (pos not in trac_axle_node_indices_b):
                 j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1] - parameters["i_power"]
             else:
                 print('Error with trac b j_matrix')
         # continuous rail last node
-        j_matrix[trac_node_locs_b[-1]] = -i_trac_b[-1]
+        j_matrix[trac_node_indices_b[-1]] = -i_trac_b[-1]
 
         # insulated rail nodes
         n_sb = 0
         for i in all_sig_node_indices_b:
-            if i in sig_node_locs_power_b:
+            if i in sig_node_indices_power_b:
                 j_matrix[i] = parameters["i_power"] + i_sig_b[n_sb]
-            elif i in sig_node_locs_relay_b:
+            elif i in sig_node_indices_relay_b:
                 j_matrix[i] = -i_sig_b[n_sb]
                 n_sb = n_sb + 1
             elif i in sig_axle_node_indices_b:
@@ -554,13 +547,13 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
 
         # Calculate relay voltages and currents
         # "a" first
-        v_relay_top_node_a = v_matrix[sig_node_locs_relay_a]
-        v_relay_bottom_node_a = v_matrix[trac_node_locs_relay_a]
+        v_relay_top_node_a = v_matrix[sig_node_indices_relay_a]
+        v_relay_bottom_node_a = v_matrix[trac_node_indices_relay_a]
         v_relay_a = v_relay_top_node_a - v_relay_bottom_node_a
 
         # "b" first
-        v_relay_top_node_b = v_matrix[sig_node_locs_relay_b]
-        v_relay_bottom_node_b = v_matrix[trac_node_locs_relay_b]
+        v_relay_top_node_b = v_matrix[sig_node_indices_relay_b]
+        v_relay_bottom_node_b = v_matrix[trac_node_indices_relay_b]
         v_relay_b = v_relay_top_node_b - v_relay_bottom_node_b
 
         i_relays_a = v_relay_a / parameters["r_relay"]
@@ -575,12 +568,11 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
 axle_positions = np.load("axle_positions_at_end_ge.npz")
 axle_positions_a = axle_positions["axle_pos_a"]
 axle_positions_b = axle_positions["axle_pos_b"]
-ex = np.arange([0])
+ex = np.array([0])
 ey = np.array([0])
 
-for i in range(0, 100):
-    ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
-    print(i)
+ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
+
 
 #fig, ax = plt.subplots(2, 1)
 #ax[0].plot(ia[0], '.')
