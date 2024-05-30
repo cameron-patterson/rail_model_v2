@@ -53,97 +53,82 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     z0_trac = np.sqrt(parameters["z_trac"] / parameters["y_trac_" + conditions])  # Characteristic impedance of the traction return rail (km^-1)
     z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig_" + conditions])  # Characteristic impedance of the signalling rail (km^-1)
 
-    # Create dictionary containing each node's index and its position along the rails
-    sig_sub_blocks_sums = np.cumsum(sig_block_lengths)  # The
-    sig_node_indices_a = np.copy(sig_node_indices_a)
-    sig_node_positions_a = np.zeros(len(sig_node_indices_a))
-    sig_node_positions_a[0] = 0
-    n_sb = 0
-    for i in range(1, len(sig_node_indices_a)-1, 2):
-        sig_node_positions_a[i] = sig_sub_blocks_sums[n_sb]
-        sig_node_positions_a[i+1] = sig_sub_blocks_sums[n_sb]
-        n_sb += 1
-    sig_node_positions_a[-1] = sig_sub_blocks_sums[-1]
+    # Calculate the distance along the rail of nodes on the signalling rail
+    sig_sub_blocks_sums = np.cumsum(sig_block_lengths)  # Cumulative sum of signalling blocks lengths
+    sig_sub_blocks_sums_zero = np.hstack((0, sig_sub_blocks_sums))  # Cumulative sum of signalling blocks lengths starting with 0
+    sig_node_positions = np.hstack((sig_sub_blocks_sums_zero[0], np.repeat(sig_sub_blocks_sums_zero[1:-1], 2), sig_sub_blocks_sums_zero[-1]))  # Distance along the rail for the signalling rail nodes
 
-    sig_node_indices_b = np.copy(sig_node_indices_b)
-    sig_node_positions_b = np.zeros(len(sig_node_indices_b))
-    sig_node_positions_b[0] = 0
-    n_sb = 0
-    for i in range(1, len(sig_node_indices_b) - 1, 2):
-        sig_node_positions_b[i] = sig_sub_blocks_sums[n_sb]
-        sig_node_positions_b[i + 1] = sig_sub_blocks_sums[n_sb]
-        n_sb += 1
-    sig_node_positions_b[-1] = sig_sub_blocks_sums[-1]
-
+    # Calculate axle node indices for trains in the "a" direction
     if len(axle_pos_a) != 0:
-        trac_axle_node_positions_a = np.array(sorted(axle_pos_a.flatten()))
-        starting_node = sig_node_indices_b[-1] + 1
-        trac_axle_node_indices_a = np.arange(starting_node, starting_node + len(trac_axle_node_positions_a))
-
-        sig_axle_node_positions_a = np.array(sorted(axle_pos_a.flatten()))
-        starting_node = trac_axle_node_indices_a[-1] + 1
-        sig_axle_node_indices_a = np.arange(starting_node, starting_node + len(sig_axle_node_positions_a))
+        axle_node_positions_a = np.array(sorted(axle_pos_a.flatten()))  # Sort axle node positions of "a" and convert to numpy array
+        starting_node = sig_node_indices_b[-1] + 1  # Starting node index for the traction return rail of "a"
+        trac_axle_node_indices_a = np.arange(starting_node, starting_node + len(axle_node_positions_a))  # Nodal indices for axles on the traction return rail of "a"
+        starting_node = trac_axle_node_indices_a[-1] + 1  # Starting node index for the signalling rail of "a"
+        sig_axle_node_indices_a = np.arange(starting_node, starting_node + len(axle_node_positions_a))  # Nodal indices for axles on the signalling rail of "a"
     else:
         pass
 
+    # Calculate axle node indices for trains in the "b" direction
     if len(axle_pos_b) != 0:
-        trac_axle_node_positions_b = np.array(sorted(axle_pos_b.flatten()))
+        axle_node_positions_b = np.array(sorted(axle_pos_b.flatten()))  # Sort axle node positions of "b" and convert to numpy array
         if len(axle_pos_a) != 0:
-            starting_node = sig_axle_node_indices_a[-1] + 1
+            starting_node = sig_axle_node_indices_a[-1] + 1  # Starting node index if there are trains on "a"
         else:
-            starting_node = sig_node_indices_b[-1] + 1
-        trac_axle_node_indices_b = np.arange(starting_node, starting_node + len(trac_axle_node_positions_b))
-
-        sig_axle_node_positions_b = np.array(sorted(axle_pos_b.flatten()))
-        starting_node = trac_axle_node_indices_b[-1] + 1
-        sig_axle_node_indices_b = np.arange(starting_node, starting_node + len(sig_axle_node_positions_b))
+            starting_node = sig_node_indices_b[-1] + 1    # Starting node index if there are no trains on "a"
+        trac_axle_node_indices_b = np.arange(starting_node, starting_node + len(axle_node_positions_b))  # Nodal indices for axles on the traction return rail of "b"
+        starting_node = trac_axle_node_indices_b[-1] + 1  # Starting node index for the signalling rail of "b"
+        sig_axle_node_indices_b = np.arange(starting_node, starting_node + len(axle_node_positions_b))  # Nodal indices for axles on the signalling rail of "b"
     else:
         pass
 
-    if len(axle_pos_a) != 0 and len(axle_pos_b) != 0:
-        all_trac_node_positions_a = np.hstack((trac_node_positions, trac_axle_node_positions_a))
-        all_sig_node_positions_a = np.hstack((sig_node_positions_a, sig_axle_node_positions_a))
-        all_trac_node_positions_b = np.hstack((trac_node_positions, trac_axle_node_positions_b))
-        all_sig_node_positions_b = np.hstack((sig_node_positions_b, sig_axle_node_positions_b))
+    # Combine the nodal positions and indices for the rails and the axles into single arrays
+    if len(axle_pos_a) != 0 and len(axle_pos_b) != 0:  # If there are trains in both "a" and "b"
+        all_trac_node_positions_a = np.hstack((trac_node_positions, axle_node_positions_a))
+        all_sig_node_positions_a = np.hstack((sig_node_positions, axle_node_positions_a))
+        all_trac_node_positions_b = np.hstack((trac_node_positions, axle_node_positions_b))
+        all_sig_node_positions_b = np.hstack((sig_node_positions, axle_node_positions_b))
         all_trac_node_indices_a = np.hstack((trac_node_indices_a, trac_axle_node_indices_a))
         all_sig_node_indices_a = np.hstack((sig_node_indices_a, sig_axle_node_indices_a))
         all_trac_node_indices_b = np.hstack((trac_node_indices_b, trac_axle_node_indices_b))
         all_sig_node_indices_b = np.hstack((sig_node_indices_b, sig_axle_node_indices_b))
 
-    elif len(axle_pos_a) != 0 and len(axle_pos_b) == 0:
-        all_trac_node_positions_a = np.hstack((trac_node_positions, trac_axle_node_positions_a))
-        all_sig_node_positions_a = np.hstack((sig_node_positions_a, sig_axle_node_positions_a))
+    elif len(axle_pos_a) != 0 and len(axle_pos_b) == 0:  # If there are trains in "a", but not in "b"
+        all_trac_node_positions_a = np.hstack((trac_node_positions, axle_node_positions_a))
+        all_sig_node_positions_a = np.hstack((sig_node_positions, axle_node_positions_a))
         all_trac_node_positions_b = np.copy(trac_node_positions)
-        all_sig_node_positions_b = np.copy(sig_node_positions_b)
+        all_sig_node_positions_b = np.copy(sig_node_positions)
         all_trac_node_indices_a = np.hstack((trac_node_indices_a, trac_axle_node_indices_a))
         all_sig_node_indices_a = np.hstack((sig_node_indices_a, sig_axle_node_indices_a))
         all_trac_node_indices_b = np.copy(trac_node_indices_b)
         all_sig_node_indices_b = np.copy(sig_node_indices_b)
 
-    else:
+    else:  # If there are trains in "b", but not in "a"
         all_trac_node_positions_a = np.copy(trac_node_positions)
-        all_sig_node_positions_a = np.copy(sig_node_positions_a)
-        all_trac_node_positions_b = np.hstack((trac_node_positions, trac_axle_node_positions_b))
-        all_sig_node_positions_b = np.hstack((sig_node_positions_b, sig_axle_node_positions_b))
+        all_sig_node_positions_a = np.copy(sig_node_positions)
+        all_trac_node_positions_b = np.hstack((trac_node_positions, axle_node_positions_b))
+        all_sig_node_positions_b = np.hstack((sig_node_positions, axle_node_positions_b))
         all_trac_node_indices_a = np.copy(trac_node_indices_a)
         all_sig_node_indices_a = np.copy(sig_node_indices_a)
         all_trac_node_indices_b = np.hstack((trac_node_indices_b, trac_axle_node_indices_b))
         all_sig_node_indices_b = np.hstack((sig_node_indices_b, sig_axle_node_indices_b))
 
+    # Create dictionaries of nodal indices and positions
     trac_a_dict = dict(zip(all_trac_node_indices_a, all_trac_node_positions_a))
     sig_a_dict = dict(zip(all_sig_node_indices_a, all_sig_node_positions_a))
     trac_b_dict = dict(zip(all_trac_node_indices_b, all_trac_node_positions_b))
     sig_b_dict = dict(zip(all_sig_node_indices_b, all_sig_node_positions_b))
 
+    # Sort the dictionaries based on positions
     sorted_trac_a_dict = dict(sorted(trac_a_dict.items(), key=lambda item: item[1]))
     sorted_sig_a_dict = dict(sorted(sig_a_dict.items(), key=lambda item: item[1]))
     sorted_trac_b_dict = dict(sorted(trac_b_dict.items(), key=lambda item: item[1]))
     sorted_sig_b_dict = dict(sorted(sig_b_dict.items(), key=lambda item: item[1]))
 
-    all_trac_node_indices_a = list(sorted_trac_a_dict.keys())
-    all_sig_node_indices_a = list(sorted_sig_a_dict.keys())
-    all_trac_node_indices_b = list(sorted_trac_b_dict.keys())
-    all_sig_node_indices_b = list(sorted_sig_b_dict.keys())
+    # Save the sorted indices as new arrays
+    all_trac_node_indices_a = np.array(list(sorted_trac_a_dict.keys()))
+    all_sig_node_indices_a = np.array(list(sorted_sig_a_dict.keys()))
+    all_trac_node_indices_b = np.array(list(sorted_trac_b_dict.keys()))
+    all_sig_node_indices_b = np.array(list(sorted_sig_b_dict.keys()))
 
     # Make a new zeroed admittance matrix for the new restructured network
     n_nodes_restructured = len(all_trac_node_indices_a) + len(all_sig_node_indices_a) + len(all_trac_node_indices_b) + len(all_sig_node_indices_b)
@@ -157,75 +142,51 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
 
     # Find which nodes need to be calculated or recalculated
     # "a" first
-    recalculate_trac_node_a = []  # Traction rail nodes first
-    # First node
-    if all_trac_node_indices_a[1] in trac_axle_node_indices_a:
-        recalculate_trac_node_a.append(all_trac_node_indices_a[0])
-    else:
-        pass
-    # Middle nodes
-    for i in range(1, len(all_trac_node_indices_a) - 1):
-        if (all_trac_node_indices_a[i - 1] in trac_axle_node_indices_a) or (all_trac_node_indices_a[i] in trac_axle_node_indices_a) or (all_trac_node_indices_a[i + 1] in trac_axle_node_indices_a):
-            recalculate_trac_node_a.append(all_trac_node_indices_a[i])
-        else:
-            pass
-    # Last nodes
-    if all_trac_node_indices_a[-2] in trac_axle_node_indices_a:
-        recalculate_trac_node_a.append(all_trac_node_indices_a[-1])
-    else:
-        pass
-    recalculate_sig_node_a = []  # Signalling rail nodes second
-    # First node
-    if all_sig_node_indices_a[1] in sig_axle_node_indices_a:
-        recalculate_sig_node_a.append(all_sig_node_indices_a[0])
-    else:
-        pass
-    # Middle nodes
-    for i in range(1, len(all_sig_node_indices_a) - 1):
-        if (all_sig_node_indices_a[i - 1] in sig_axle_node_indices_a) or (all_sig_node_indices_a[i] in sig_axle_node_indices_a) or (all_sig_node_indices_a[i + 1] in sig_axle_node_indices_a):
-            recalculate_sig_node_a.append(all_sig_node_indices_a[i])
-        else:
-            pass
-    # Last nodes
-    if all_sig_node_indices_a[-2] in sig_axle_node_indices_a:
-        recalculate_sig_node_a.append(all_sig_node_indices_a[-1])
-    else:
-        pass
+    # Traction return rail
+    # Find the indices of the subset elements in the original array
+    sub_set_indices = np.where(np.isin(all_trac_node_indices_a, trac_axle_node_indices_a))[0]
+    # Create a mask for the neighbours
+    mask = np.zeros(len(all_trac_node_indices_a), dtype=bool)
+    mask[sub_set_indices] = True
+    # Add neighbours to the mask
+    mask[np.maximum(sub_set_indices - 1, 0)] = True
+    mask[np.minimum(sub_set_indices + 1, len(all_trac_node_indices_a) - 1)] = True
+    # Extract the values from the original array using the mask
+    recalculate_trac_node_a = all_trac_node_indices_a[mask]
+    # Signalling rail
+    # Find the indices of the subset elements in the original array
+    sub_set_indices = np.where(np.isin(all_sig_node_indices_a, sig_axle_node_indices_a))[0]
+    # Create a mask for the neighbours
+    mask = np.zeros(len(all_sig_node_indices_a), dtype=bool)
+    mask[sub_set_indices] = True
+    # Add neighbours to the mask
+    mask[np.maximum(sub_set_indices - 1, 0)] = True
+    mask[np.minimum(sub_set_indices + 1, len(all_sig_node_indices_a) - 1)] = True
+    # Extract the values from the original array using the mask
+    recalculate_sig_node_a = all_sig_node_indices_a[mask]
     # "b" second
-    recalculate_trac_node_b = []  # Traction rail nodes first
-    # First node
-    if all_trac_node_indices_b[1] in trac_axle_node_indices_b:
-        recalculate_trac_node_b.append(all_trac_node_indices_b[0])
-    else:
-        pass
-    # Middle nodes
-    for i in range(1, len(all_trac_node_indices_b) - 1):
-        if (all_trac_node_indices_b[i - 1] in trac_axle_node_indices_b) or (all_trac_node_indices_b[i] in trac_axle_node_indices_b) or (all_trac_node_indices_b[i + 1] in trac_axle_node_indices_b):
-            recalculate_trac_node_b.append(all_trac_node_indices_b[i])
-        else:
-            pass
-    # Last nodes
-    if all_trac_node_indices_b[-2] in trac_axle_node_indices_b:
-        recalculate_trac_node_b.append(all_trac_node_indices_b[-1])
-    else:
-        pass
-    recalculate_sig_node_b = []  # Signalling rail nodes second
-    # First node
-    if all_sig_node_indices_b[1] in sig_axle_node_indices_b:
-        recalculate_sig_node_b.append(all_sig_node_indices_b[0])
-    else:
-        pass
-    # Middle nodes
-    for i in range(1, len(all_sig_node_indices_b) - 1):
-        if (all_sig_node_indices_b[i - 1] in sig_axle_node_indices_b) or (all_sig_node_indices_b[i] in sig_axle_node_indices_b) or (all_sig_node_indices_b[i + 1] in sig_axle_node_indices_b):
-            recalculate_sig_node_b.append(all_sig_node_indices_b[i])
-        else:
-            pass
-    # Last nodes
-    if all_sig_node_indices_b[-2] in sig_axle_node_indices_b:
-        recalculate_sig_node_b.append(all_sig_node_indices_b[-1])
-    else:
-        pass
+    # Traction return rail
+    # Find the indices of the subset elements in the original array
+    sub_set_indices = np.where(np.isin(all_trac_node_indices_b, trac_axle_node_indices_b))[0]
+    # Create a mask for the neighbours
+    mask = np.zeros(len(all_trac_node_indices_b), dtype=bool)
+    mask[sub_set_indices] = True
+    # Add neighbours to the mask
+    mask[np.maximum(sub_set_indices - 1, 0)] = True
+    mask[np.minimum(sub_set_indices + 1, len(all_trac_node_indices_b) - 1)] = True
+    # Extract the values from the original array using the mask
+    recalculate_trac_node_b = all_trac_node_indices_b[mask]
+    # Signalling rail
+    # Find the indices of the subset elements in the original array
+    sub_set_indices = np.where(np.isin(all_sig_node_indices_b, sig_axle_node_indices_b))[0]
+    # Create a mask for the neighbours
+    mask = np.zeros(len(all_sig_node_indices_b), dtype=bool)
+    mask[sub_set_indices] = True
+    # Add neighbours to the mask
+    mask[np.maximum(sub_set_indices - 1, 0)] = True
+    mask[np.minimum(sub_set_indices + 1, len(all_sig_node_indices_b) - 1)] = True
+    # Extract the values from the original array using the mask
+    recalculate_sig_node_b = all_sig_node_indices_b[mask]
 
     # Recalculate the equivalent pi-circuit parameters for the new network
     # Get the sorted nodal positions
@@ -237,7 +198,7 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     # Calculate the length of the sub blocks
     trac_sub_blocks_a = np.diff(all_trac_node_positions_sorted_a)
     sig_sub_blocks_a = np.diff(all_sig_node_positions_sorted_a)
-    sig_sub_blocks_a[sig_sub_blocks_a == 0] = np.nan  # Sub blocks with length zero on the signalling rail indicate sigulating rail joints, these need to be nans
+    sig_sub_blocks_a[sig_sub_blocks_a == 0] = np.nan  # Sub blocks with length zero on the signalling rail indicate calculating rail joints, these need to be nans
     trac_sub_blocks_b = np.diff(all_trac_node_positions_sorted_b)
     sig_sub_blocks_b = np.diff(all_sig_node_positions_sorted_b)
     sig_sub_blocks_b[sig_sub_blocks_b == 0] = np.nan
@@ -256,63 +217,102 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
 
     # Recalculate nodal parallel admittances
     # "a" first
-    recalculate_yg_trac_a = np.zeros(len(recalculate_trac_node_a))  # Traction return rail
-    n = 0
-    for i in recalculate_trac_node_a:
-        j = np.argwhere(all_trac_node_indices_a == i)
-        # If it's the first node
-        if i == trac_node_indices_a[0]:
-            recalculate_yg_trac_a[n] = 0.5 * yg_trac_a[j]
-            n += 1
-        # If it's the last node
-        elif i == trac_node_indices_a[-1]:
-            recalculate_yg_trac_a[n] = 0.5 * yg_trac_a[j - 1]
-        # Otherwise
-        else:
-            recalculate_yg_trac_a[n] = (0.5 * yg_trac_a[j - 1]) + (0.5 * yg_trac_a[j])
-            n += 1
-    recalculate_yg_sig_a = np.zeros(len(recalculate_sig_node_a))  # Signalling rail
-    n = 0
-    for i in recalculate_sig_node_a:
-        j = np.argwhere(all_sig_node_indices_a == i)
-        if i in sig_node_indices_relay_a:
-            recalculate_yg_sig_a[n] = 0.5 * yg_sig_a[j]
-            n += 1
-        elif i in sig_node_indices_power_a:
-            recalculate_yg_sig_a[n] = 0.5 * yg_sig_a[j - 1]
-            n += 1
-        else:
-            recalculate_yg_sig_a[n] = (0.5 * yg_sig_a[j - 1]) + (0.5 * yg_sig_a[j])
-            n += 1
+    recalculate_yg_trac_a = np.array([])  # Traction return rail
+    mask_first = np.isin(recalculate_trac_node_a, all_trac_node_indices_a[0])  # Create a mask to determine if the first traction rail node needs to be recalculated
+    if np.any(mask_first):
+        first = recalculate_trac_node_a[mask_first]  # Gives the index of the nodes to be recalculated
+        first_locs = np.where(np.isin(all_trac_node_indices_a, first))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_trac_a = np.append(recalculate_yg_trac_a, 0.5 * yg_trac_a[first_locs])  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    mask_mid = np.isin(recalculate_trac_node_a, all_trac_node_indices_a[1:-2])  # Create a mask to determine if any middle traction rail nodes needs to be recalculated
+    if np.any(mask_mid):
+        mid = recalculate_trac_node_a[mask_mid]  # Gives the index of the nodes to be recalculated
+        mid_locs = np.where(np.isin(all_trac_node_indices_a, mid))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_trac_a = np.append(recalculate_yg_trac_a, (0.5 * yg_trac_a[mid_locs - 1]) + (0.5 * yg_trac_a[mid_locs]))  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    mask_last = np.isin(recalculate_trac_node_a, all_trac_node_indices_a[-1])  # Create a mask to determine if the last traction rail node needs to be recalculated
+    if np.any(mask_last):
+        last = recalculate_trac_node_a[mask_last]  # Gives the index of the nodes to be recalculated
+        last_locs = np.where(np.isin(all_trac_node_indices_a, last))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_trac_a = np.append(recalculate_yg_trac_a, 0.5 * yg_trac_a[last_locs - 1])  # Sets the value for nodal parallel admittance
+    else:
+        pass
+
+    recalculate_yg_sig_a = np.full(len(all_sig_node_indices_a), -1).astype(float)  # Setup an array to place recalculated values in, with negative values to filter out unused cells later
+    mask_relay = np.isin(sig_node_indices_relay_a, recalculate_sig_node_a)  # Create a mask to determine if any signalling rail relay nodes needs to be recalculated
+    if np.any(mask_relay):
+        relay = sig_node_indices_relay_a[mask_relay]  # Gives the index of the nodes to be recalculated
+        relay_locs = np.where(np.isin(all_sig_node_indices_a, relay))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_sig_a[relay_locs] = 0.5 * yg_sig_a[relay_locs]  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    mask_power = np.isin(sig_node_indices_power_a, recalculate_sig_node_a)  # Create a mask to determine if any signalling rail power nodes needs to be recalculated
+    if np.any(mask_power):
+        power = sig_node_indices_power_a[mask_power]  # Gives the index of the nodes to be recalculated
+        power_locs = np.where(np.isin(all_sig_node_indices_a, power))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_sig_a[power_locs] = 0.5 * yg_sig_a[power_locs - 1]  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    other_node_indices = all_sig_node_indices_a[~np.logical_or(np.isin(all_sig_node_indices_a, sig_node_indices_relay_a), np.isin(all_sig_node_indices_a, sig_node_indices_power_a))]
+    mask_other = np.isin(other_node_indices, recalculate_sig_node_a)  # Create a mask to determine if any other signalling rail nodes needs to be recalculated
+    if np.any(mask_other):
+        other = other_node_indices[mask_other]  # Gives the index of the nodes to be recalculated
+        other_locs = np.where(np.isin(all_sig_node_indices_a, other))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_sig_a[other_locs] = (0.5 * yg_sig_a[other_locs - 1]) + (0.5 * yg_sig_a[other_locs])  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    recalculate_yg_sig_a = recalculate_yg_sig_a[recalculate_yg_sig_a != -1]  # Remove unused cells
+
     # "b" second
-    recalculate_yg_trac_b = np.zeros(len(recalculate_trac_node_b))  # Traction return rail
-    n = 0
-    for i in recalculate_trac_node_b:
-        j = np.argwhere(all_trac_node_indices_b == i)
-        # If it's the first node
-        if i == trac_node_indices_b[0]:
-            recalculate_yg_trac_b[n] = 0.5 * yg_trac_b[j]
-            n += 1
-        # If it's the last node
-        elif i == trac_node_indices_b[-1]:
-            recalculate_yg_trac_b[n] = 0.5 * yg_trac_b[j - 1]
-        # Otherwise
-        else:
-            recalculate_yg_trac_b[n] = (0.5 * yg_trac_b[j - 1]) + (0.5 * yg_trac_b[j])
-            n += 1
-    recalculate_yg_sig_b = np.zeros(len(recalculate_sig_node_b))  # Signalling rail
-    n = 0
-    for i in recalculate_sig_node_b:
-        j = np.argwhere(all_sig_node_indices_b == i)
-        if i in sig_node_indices_power_b:
-            recalculate_yg_sig_b[n] = 0.5 * yg_sig_b[j]
-            n += 1
-        elif i in sig_node_indices_relay_b:
-            recalculate_yg_sig_b[n] = 0.5 * yg_sig_b[j - 1]
-            n += 1
-        else:
-            recalculate_yg_sig_b[n] = (0.5 * yg_sig_b[j - 1]) + (0.5 * yg_sig_b[j])
-            n += 1
+    recalculate_yg_trac_b = np.array([])  # Traction return rail
+    mask_first = np.isin(recalculate_trac_node_b, all_trac_node_indices_b[0])  # Create a mask to determine if the first traction rail node needs to be recalculated
+    if np.any(mask_first):
+        first = recalculate_trac_node_b[mask_first]  # Gives the index of the nodes to be recalculated
+        first_locs = np.where(np.isin(all_trac_node_indices_b, first))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_trac_b = np.append(recalculate_yg_trac_b, 0.5 * yg_trac_b[first_locs])  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    mask_mid = np.isin(recalculate_trac_node_b, all_trac_node_indices_b[1:-2])  # Create a mask to determine if any middle traction rail nodes needs to be recalculated
+    if np.any(mask_mid):
+        mid = recalculate_trac_node_b[mask_mid]  # Gives the index of the nodes to be recalculated
+        mid_locs = np.where(np.isin(all_trac_node_indices_b, mid))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_trac_b = np.append(recalculate_yg_trac_b, (0.5 * yg_trac_b[mid_locs - 1]) + (0.5 * yg_trac_b[mid_locs]))  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    mask_last = np.isin(recalculate_trac_node_b, all_trac_node_indices_b[-1])  # Create a mask to determine if the last traction rail node needs to be recalculated
+    if np.any(mask_last):
+        last = recalculate_trac_node_b[mask_last]  # Gives the index of the nodes to be recalculated
+        last_locs = np.where(np.isin(all_trac_node_indices_b, last))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_trac_b = np.append(recalculate_yg_trac_b, 0.5 * yg_trac_b[last_locs - 1])  # Sets the value for nodal parallel admittance
+    else:
+        pass
+
+    recalculate_yg_sig_b = np.full(len(all_sig_node_indices_b), -1).astype(float)  # Setup an array to place recalculated values in, with negative values to filter out unused cells later
+    mask_power = np.isin(sig_node_indices_power_b, recalculate_sig_node_b)  # Create a mask to determine if any signalling rail relay nodes needs to be recalculated
+    if np.any(mask_power):
+        relay = sig_node_indices_power_b[mask_power]  # Gives the index of the nodes to be recalculated
+        relay_locs = np.where(np.isin(all_sig_node_indices_b, relay))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_sig_b[relay_locs] = 0.5 * yg_sig_b[relay_locs]  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    mask_relay = np.isin(sig_node_indices_relay_b, recalculate_sig_node_b)  # Create a mask to determine if any signalling rail power nodes needs to be recalculated
+    if np.any(mask_relay):
+        power = sig_node_indices_relay_b[mask_relay]  # Gives the index of the nodes to be recalculated
+        power_locs = np.where(np.isin(all_sig_node_indices_b, power))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_sig_b[power_locs] = 0.5 * yg_sig_b[power_locs - 1]  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    other_node_indices = all_sig_node_indices_b[~np.logical_or(np.isin(all_sig_node_indices_b, sig_node_indices_relay_b), np.isin(all_sig_node_indices_b, sig_node_indices_power_b))]
+    mask_other = np.isin(other_node_indices, recalculate_sig_node_b)  # Create a mask to determine if any other signalling rail nodes needs to be recalculated
+    if np.any(mask_other):
+        other = other_node_indices[mask_other]  # Gives the index of the nodes to be recalculated
+        other_locs = np.where(np.isin(all_sig_node_indices_b, other))[0]  # Gives the position along the rail of the nodes to be recalculated
+        recalculate_yg_sig_b[other_locs] = (0.5 * yg_sig_b[other_locs - 1]) + (0.5 * yg_sig_b[other_locs])  # Sets the value for nodal parallel admittance
+    else:
+        pass
+    recalculate_yg_sig_b = recalculate_yg_sig_b[recalculate_yg_sig_b != -1]  # Remove unused cells
 
     # Recalculate sum of parallel admittances into nodes
     # "a" first
@@ -565,13 +565,13 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     return i_relays_all_a, i_relays_all_b
 
 
-axle_positions = np.load("axle_positions_at_end_ge.npz")
+axle_positions = np.load("axle_positions.npz")
 axle_positions_a = axle_positions["axle_pos_a"]
 axle_positions_b = axle_positions["axle_pos_b"]
 ex = np.array([0])
 ey = np.array([0])
 
-ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
+ia, ib = wrong_side_two_track("test", "moderate", axle_positions_a, axle_positions_b, ex, ey)
 
 
 #fig, ax = plt.subplots(2, 1)
