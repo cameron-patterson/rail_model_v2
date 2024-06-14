@@ -23,14 +23,14 @@ def e_field(exs, eys, section_name, conditions):
                   "y_shunt": 1 / 251e-4}  # Shunt (axle) admittance (siemens)
 
     # Load in section network sub block angles
-    sub_block_angles = np.load("data\\network_parameters\\glasgow_edinburgh_falkirk\\angles_" + section_name + ".npz")
+    sub_block_angles = np.load("data\\network_parameters\\" + section_name + "\\angles_" + section_name + ".npz")
     trac_angles_a = sub_block_angles["trac_angles_a"]
     trac_angles_b = sub_block_angles["trac_angles_b"]
     sig_angles_a = sub_block_angles["sig_angles_a"]
     sig_angles_b = sub_block_angles["sig_angles_b"]
 
     # Load in section network node indices
-    network_nodes = np.load("data\\network_parameters\\glasgow_edinburgh_falkirk\\nodes_" + section_name + ".npz")
+    network_nodes = np.load("data\\network_parameters\\" + section_name + "\\nodes_" + section_name + ".npz")
     n_nodes = network_nodes["n_nodes"]
     n_nodes_trac = network_nodes["n_nodes_trac"]
     trac_node_locs_a = network_nodes["trac_node_locs_a"]
@@ -156,3 +156,13 @@ def e_field(exs, eys, section_name, conditions):
         i_relays_all_b[es, :] = i_relays_b
 
     return i_relays_all_a, i_relays_all_b
+
+
+ex = np.arange(-20, 20, 0.1)
+ey = np.arange(-20, 20, 0.1)
+ia, ib = e_field(ex, ey, "west_coast_main_line", "moderate")
+
+
+ex = np.arange(-20, 20, 0.1)
+ey = np.arange(-20, 20, 0.1)
+ia, ib = e_field(ex, ey, "west_coast_main_line", "moderate")

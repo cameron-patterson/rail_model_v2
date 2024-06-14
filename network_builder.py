@@ -30,7 +30,9 @@ def build_network_two_track(section_name, conditions):
 
     # Load in the lengths and angles of the track circuit blocks
     # Note: zero degrees is directly eastwards, with positive values counter-clockwise and negative values clockwise
-    blocks, angles = np.loadtxt("data/rail_data/" + section_name + "/" + section_name + "_blocks_angles.txt", unpack=True, usecols=(0, 1))
+    data = np.load("data/rail_data/" + section_name + "/" + section_name + "_lengths_angles.npz")
+    blocks = data["block_lengths"]
+    angles = data["angles"]
     n_blocks = int(len(blocks))  # Number of blocks in this section
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
@@ -312,6 +314,6 @@ def build_network_two_track(section_name, conditions):
     np.savez("angles_"+section_name, trac_angles_a=trac_angles_a, trac_angles_b=trac_angles_b, sig_angles_a=sig_angles_a, sig_angles_b=sig_angles_b)
 
 
-section = "test"
+section = "west_coast_main_line"
 for cond in ["dry", "moderate", "wet"]:
     build_network_two_track(section_name=section, conditions=cond)
