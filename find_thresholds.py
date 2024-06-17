@@ -2,9 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-import numpy as np
-
-
 def e_field_parallel(e_fields, section_name, conditions):
     # Create dictionary of network parameters
     parameters = {"z_sig": 0.0289,  # Signalling rail series impedance (ohms/km)
@@ -155,12 +152,4 @@ def e_field_parallel(e_fields, section_name, conditions):
     return i_relays_all_a, i_relays_all_b
 
 
-#e = np.arange(-20, 20, 0.1)
-e = np.array([5])
-ia, ib = e_field_parallel(e, "west_coast_main_line", "moderate")
-ia0, ib0 = e_field_parallel(np.array([0]), "west_coast_main_line", "moderate")
 
-plt.plot(ia[0] - ia0[0], '.', color='blue')
-#plt.axhline(0.081, color='green')
-#plt.axhline(0.055, color='red')
-plt.show()
