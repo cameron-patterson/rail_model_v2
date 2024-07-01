@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -47,122 +48,128 @@ def e_field(exs, eys, section_name, conditions):
     sig_node_locs_relay_b = network_nodes["sig_node_locs_relay_b"]
 
     # Currents
-    i_relays_all_a = np.zeros([len(exs), len(sig_angles_a)])
-    i_relays_all_b = np.zeros([len(exs), len(sig_angles_a)])
-    for es in range(0, len(exs)):
-        # Set up current matrix
-        j_matrix = np.zeros(n_nodes)
-        ex = exs[es]
-        ey = eys[es]
+    # Set up current matrix
+    j_matrix = np.zeros([len(exs), n_nodes])
 
-        # "a" first
-        e_x_par_trac_a = ex * np.cos(0.5 * np.pi - trac_angles_a)
-        e_y_par_trac_a = ey * np.cos(trac_angles_a)
-        e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a
-        e_x_par_sig_a = ex * np.cos(0.5 * np.pi - sig_angles_a)
-        e_y_par_sig_a = ey * np.cos(sig_angles_a)
-        e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
-        i_sig_a = e_par_sig_a / parameters["z_sig"]
-        i_trac_a = e_par_trac_a / parameters["z_trac"]
+    # "a" first
+    e_x_par_trac_a = np.outer(exs, np.cos(0.5 * np.pi - trac_angles_a))
+    e_y_par_trac_a = np.outer(eys, np.cos(trac_angles_a))
+    e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a
+    e_x_par_sig_a = np.outer(exs, np.cos(0.5 * np.pi - sig_angles_a))
+    e_y_par_sig_a = np.outer(eys, np.cos(sig_angles_a))
+    e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
+    i_sig_a = e_par_sig_a / parameters["z_sig"]
+    i_trac_a = e_par_trac_a / parameters["z_trac"]
 
-        # "b" second
-        e_x_par_trac_b = ex * np.cos(0.5 * np.pi - trac_angles_b)
-        e_y_par_trac_b = ey * np.cos(trac_angles_b)
-        e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
-        e_x_par_sig_b = ex * np.cos(0.5 * np.pi - sig_angles_b)
-        e_y_par_sig_b = ey * np.cos(sig_angles_b)
-        e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
-        i_sig_b = e_par_sig_b / parameters["z_sig"]
-        i_trac_b = e_par_trac_b / parameters["z_trac"]
+    # "b" second
+    e_x_par_trac_b = np.outer(exs, np.cos(0.5 * np.pi - trac_angles_b))
+    e_y_par_trac_b = np.outer(eys, np.cos(trac_angles_b))
+    e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
+    e_x_par_sig_b = np.outer(exs, np.cos(0.5 * np.pi - sig_angles_b))
+    e_y_par_sig_b = np.outer(eys, np.cos(sig_angles_b))
+    e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
+    i_sig_b = e_par_sig_b / parameters["z_sig"]
+    i_trac_b = e_par_trac_b / parameters["z_trac"]
 
-        # "a" first
-        index_sb = np.arange(0, n_nodes_trac, 1)
-        # Traction return rail first node
-        j_matrix[trac_node_locs_a[0]] = -i_trac_a[0]
-        # Traction return rail centre nodes
-        for i in index_sb[1:-1]:
-            pos = trac_node_locs_a[i]
-            if pos in cb_node_locs_a:
-                j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
-            elif pos not in cb_node_locs_a:
-                j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i] - parameters["i_power"]
-            else:
-                print("Error")
-        # Traction return rail last node
-        j_matrix[trac_node_locs_a[-1]] = i_trac_a[-1] - parameters["i_power"]
-        # Signalling rail nodes
-        n_sb = 0
-        for i in sig_node_locs_a:
-            if i in sig_node_locs_relay_a:
-                j_matrix[i] = -i_sig_a[n_sb]
-            elif i in sig_node_locs_power_a:
-                j_matrix[i] = i_sig_a[n_sb] + parameters["i_power"]
-                n_sb = n_sb + 1
-            else:
-                print("Error")
+    # "a" first
+    # Traction return rail first node
+    j_matrix[:, trac_node_locs_a[0]] = -i_trac_a[:, 0]
+    # Traction return rail centre nodes
+    # Cross bond nodes
+    mask = np.isin(trac_node_locs_a, cb_node_locs_a)
+    indices = np.where(mask)[0]
+    j_matrix[:, cb_node_locs_a] = i_trac_a[:, indices - 1] - i_trac_a[:, indices]
+    # Non-cross bond nodes
+    mask = np.isin(trac_node_locs_a, cb_node_locs_a)
+    indices = np.where(~mask)[0][1:-1]
+    mask_del = ~np.isin(trac_node_locs_a, cb_node_locs_a)
+    non_cb_node_locs_centre_a = trac_node_locs_a[mask_del][1:-1]
+    j_matrix[:, non_cb_node_locs_centre_a] = i_trac_a[:, indices - 1] - i_trac_a[:, indices] - parameters["i_power"]
+    # Traction return rail last node
+    j_matrix[:, trac_node_locs_a[-1]] = i_trac_a[:, -1] - parameters["i_power"]
+    # Signalling rail nodes
+    # Relay nodes
+    j_matrix[:, sig_node_locs_relay_a] = -i_sig_a
+    # Power nodes
+    j_matrix[:, sig_node_locs_power_a] = i_sig_a + parameters["i_power"]
 
-        # "b" second
-        index_sb = np.arange(0, n_nodes_trac, 1)
-        # Traction return rail first node
-        j_matrix[trac_node_locs_b[0]] = i_trac_b[0] - parameters["i_power"]
-        # Traction return rail centre nodes
-        for i in index_sb[1:-1]:
-            pos = trac_node_locs_b[i]
-            if pos in cb_node_locs_b:
-                j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
-            elif pos not in cb_node_locs_b:
-                j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1] - parameters["i_power"]
-            else:
-                print("Error")
-        # Traction return rail last node
-        j_matrix[trac_node_locs_b[-1]] = -i_trac_b[-1]
+    # "b" second
+    # Traction return rail first node
+    j_matrix[:, trac_node_locs_b[0]] = i_trac_b[:, 0] - parameters["i_power"]
+    # Traction return rail centre nodes
+    # Cross bond nodes
+    mask = np.isin(trac_node_locs_b, cb_node_locs_b)
+    indices = np.where(mask)[0]
+    j_matrix[:, cb_node_locs_b] = i_trac_b[:, indices] - i_trac_b[:, indices - 1]
+    # Non-cross bond nodes
+    mask = np.isin(trac_node_locs_b, cb_node_locs_b)
+    indices = np.where(~mask)[0][1:-1]
+    mask_del = ~np.isin(trac_node_locs_b, cb_node_locs_b)
+    non_cb_node_locs_centre_b = trac_node_locs_b[mask_del][1:-1]
+    j_matrix[:, non_cb_node_locs_centre_b] = i_trac_b[:, indices] - i_trac_b[:, indices - 1] - parameters["i_power"]
+    # Traction return rail last node
+    j_matrix[:, trac_node_locs_b[-1]] = -i_trac_b[:, -1]
+    # Signalling rail nodes
+    # Power nodes
+    j_matrix[:, sig_node_locs_power_b] = parameters["i_power"] + i_sig_b
+    # Relay nodes
+    j_matrix[:, sig_node_locs_relay_b] = -i_sig_b
 
-        # Signalling rail nodes
-        n_sb = 0
-        for i in sig_node_locs_b:
-            if i in sig_node_locs_power_b:
-                j_matrix[i] = parameters["i_power"] + i_sig_b[n_sb]
-            elif i in sig_node_locs_relay_b:
-                j_matrix[i] = -i_sig_b[n_sb]
-                n_sb = n_sb + 1
-            else:
-                print("Error")
+    # Calculate voltage matrix
+    # Load network admittance matrix
+    y_matrix = np.load("data\\network_parameters\\" + section_name + "\\nodal_admittance_matrix_" + section_name + "_" + conditions + ".npy")
 
-        # Calculate voltage matrix
-        # Load network admittance matrix
-        y_matrix = np.load("data\\network_parameters\\" + section_name + "\\nodal_admittance_matrix_" + section_name + "_" + conditions + ".npy")
+    # Calculate inverse of admittance matrix
+    y_matrix_inv = np.linalg.inv(y_matrix)
 
-        # Calculate inverse of admittance matrix
-        y_matrix_inv = np.linalg.inv(y_matrix)
+    # Calculate nodal voltages
+    v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
-        # Calculate nodal voltages
-        v_matrix = np.matmul(y_matrix_inv, j_matrix)
+    # Calculate relay voltages and currents
+    # "a" first
+    v_relay_top_node_a = v_matrix[sig_node_locs_relay_a]
+    v_relay_bottom_node_a = v_matrix[trac_node_locs_relay_a]
+    v_relay_a = v_relay_top_node_a - v_relay_bottom_node_a
 
-        # Calculate relay voltages and currents
-        # "a" first
-        v_relay_top_node_a = v_matrix[sig_node_locs_relay_a]
-        v_relay_bottom_node_a = v_matrix[trac_node_locs_relay_a]
-        v_relay_a = v_relay_top_node_a - v_relay_bottom_node_a
+    # "b" first
+    v_relay_top_node_b = v_matrix[sig_node_locs_relay_b]
+    v_relay_bottom_node_b = v_matrix[trac_node_locs_relay_b]
+    v_relay_b = v_relay_top_node_b - v_relay_bottom_node_b
 
-        # "b" first
-        v_relay_top_node_b = v_matrix[sig_node_locs_relay_b]
-        v_relay_bottom_node_b = v_matrix[trac_node_locs_relay_b]
-        v_relay_b = v_relay_top_node_b - v_relay_bottom_node_b
+    i_relays_a = v_relay_a / parameters["r_relay"]
+    i_relays_b = v_relay_b / parameters["r_relay"]
 
-        i_relays_a = v_relay_a / parameters["r_relay"]
-        i_relays_b = v_relay_b / parameters["r_relay"]
+    i_relays_a = i_relays_a.T
+    i_relays_b = i_relays_b.T
 
-        i_relays_all_a[es, :] = i_relays_a
-        i_relays_all_b[es, :] = i_relays_b
-
-    return i_relays_all_a, i_relays_all_b
+    return i_relays_a, i_relays_b
 
 
-ex = np.arange(-20, 20, 0.1)
-ey = np.arange(-20, 20, 0.1)
-ia, ib = e_field(ex, ey, "west_coast_main_line", "moderate")
+def plot_currents(section):
+    ex = np.array([0])
+    ey = np.array([0])
+
+    ia, ib = e_field(ex, ey, section, "moderate")
+
+    fig, ax = plt.subplots(2, 1, figsize=(16, 10))
+    fig.suptitle(str(section))
+    ax[0].plot(ia[0], '.')
+    ax[0].axhline(0.081, linestyle='--', color='limegreen')
+    ax[0].axhline(0.055, linestyle='-', color='tomato')
+    ax[0].set_xlabel("Track Circuit Block")
+    ax[0].set_ylabel("Relay Current (A)")
+
+    ax[1].plot(ib[0], '.')
+    ax[1].axhline(0.081, linestyle='--', color='limegreen')
+    ax[1].axhline(0.055, linestyle='-', color='tomato')
+    ax[1].set_xlabel("Track Circuit Block")
+    ax[1].set_ylabel("Relay Current (A)")
+
+    plt.show()
 
 
-ex = np.arange(-20, 20, 0.1)
-ey = np.arange(-20, 20, 0.1)
-ia, ib = e_field(ex, ey, "west_coast_main_line", "moderate")
+#plot_currents("west_coast_main_line")
+#plot_currents("east_coast_main_line")
+#plot_currents("glasgow_edinburgh_falkirk")
+#plot_currents("bristol_parkway_london")
+

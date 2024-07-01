@@ -70,4 +70,21 @@ def plot_parallel_e():
     plt.savefig(fname='e_par_' + str(e) + '.pdf')
 
 
-plot_parallel_e()
+def plot_block_lengths(section_name):
+    data = np.load("data/rail_data/" + section_name + "/" + section_name + "_lengths_angles.npz")
+    blocks = data["block_lengths"]
+    angles = data["angles"]
+
+    fig, ax = plt.subplots(figsize=(14, 6))
+    ax.plot(blocks, '.')
+    ax.set_title(str(section_name))
+    ax.set_xlabel("Track Circuit Block")
+    ax.set_ylabel("Length (km)")
+    plt.show()
+
+
+
+plot_block_lengths("west_coast_main_line")
+plot_block_lengths("east_coast_main_line")
+plot_block_lengths("glasgow_edinburgh_falkirk")
+plot_block_lengths("bristol_parkway_london")
