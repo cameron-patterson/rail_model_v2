@@ -173,3 +173,7 @@ def plot_currents(section):
 #plot_currents("glasgow_edinburgh_falkirk")
 #plot_currents("bristol_parkway_london")
 
+
+ex = np.arange(-30, 30, 0.1)
+ey = np.arange(-30, 30, 0.1)
+ia, ib = e_field(ex, ey, "west_coast_main_line", "moderate")
