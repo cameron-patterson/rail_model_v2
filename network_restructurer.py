@@ -538,15 +538,15 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     return i_relays_all_a, i_relays_all_b
 
 
-axle_positions = np.load("axle_positions_at_end_ge.npz")
-axle_positions_a = axle_positions["axle_pos_a"]
-axle_positions_b = axle_positions["axle_pos_b"]
-ex = np.array([0])
-ey = np.array([0])
+#axle_positions = np.load("data/axle_positions/at_end_axle_pos_glasgow_edinburgh_falkirk.npz")
+#axle_positions_a = axle_positions["at_end_axle_pos_a"]
+#axle_positions_b = axle_positions["at_end_axle_pos_b"]
+#ex = np.array([0])
+#ey = np.array([0])
 
-for i in range(0, 100):
-    ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
-    print(i)
+#for i in range(0, 100):
+#    ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
+#    print(i)
 
 
 
