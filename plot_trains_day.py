@@ -1,5 +1,5 @@
 import numpy as np
-from network_restructurer import wrong_side_two_track
+from wrong_side_analysis import wrong_side_two_track
 import matplotlib.pyplot as plt
 import imageio
 from datetime import datetime, timedelta

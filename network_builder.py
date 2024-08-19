@@ -6,7 +6,7 @@ def build_network_two_track(section_name, conditions):
     parameters = {"z_sig": 0.0289,  # Signalling rail series impedance (ohms/km)
                   "z_trac": 0.0289,  # Traction return rail series impedance (ohms/km)
                   "y_sig_moderate": 0.1,  # Signalling rail parallel admittance for moderate conditions (siemens/km)
-                  "y_trac_moderate": 1.6,  # Traction return rail parallel admittance for moderate conditions (siemens/km)
+                  "y_trac_moderate": 1.6,  # Traction return rail parallel admittance in moderate conditions (siemens/km)
                   "y_sig_dry": 0.025,  # Signalling rail parallel admittance for moderate conditions (siemens/km)
                   "y_trac_dry": 1.53,  # Traction return rail parallel admittance for moderate conditions (siemens/km)
                   "y_sig_wet": 0.4,  # Signalling rail parallel admittance for moderate conditions (siemens/km)
@@ -314,18 +314,7 @@ def build_network_two_track(section_name, conditions):
     np.savez("angles_"+section_name, trac_angles_a=trac_angles_a, trac_angles_b=trac_angles_b, sig_angles_a=sig_angles_a, sig_angles_b=sig_angles_b)
 
 
-#section = "west_coast_main_line"
-#for cond in ["dry", "moderate", "wet"]:
-#    build_network_two_track(section_name=section, conditions=cond)
+#for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]
+#    for cond in ["dry", "moderate", "wet"]:
+#        build_network_two_track(section_name=section, conditions=cond)
 
-#section = "east_coast_main_line"
-#for cond in ["dry", "moderate", "wet"]:
-#    build_network_two_track(section_name=section, conditions=cond)
-
-section = "glasgow_edinburgh_falkirk"
-for cond in ["dry", "moderate", "wet"]:
-    build_network_two_track(section_name=section, conditions=cond)
-
-#section = "bristol_parkway_london"
-#for cond in ["dry", "moderate", "wet"]:
-#    build_network_two_track(section_name=section, conditions=cond)

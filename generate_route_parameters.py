@@ -34,9 +34,6 @@ def generate_blocks_params(route_name):
         longitudes = np.insert(longitudes, 0, -4.2513018)  # Start lat
         latitudes = np.insert(latitudes, len(latitudes), 55.9515217)  # End lon
         longitudes = np.insert(longitudes, len(longitudes), -3.1911483)  # End lat
-    elif route_name == 'bristol_parkway_london':
-        latitudes = np.insert(latitudes, len(latitudes), 51.5165159)  # End lon
-        longitudes = np.insert(longitudes, len(longitudes), -0.1771918)  # End lat
     else:
         print("Route starting point not specified")
 
@@ -46,7 +43,7 @@ def generate_blocks_params(route_name):
     # Find the starting point
     if route_name == 'west_coast_main_line':
         start_index = np.argmax(latitudes)
-    elif route_name == 'east_coast_main_line' or route_name == 'glasgow_edinburgh_falkirk' or route_name == 'bristol_parkway_london':
+    elif route_name == 'east_coast_main_line' or route_name == 'glasgow_edinburgh_falkirk':
         start_index = np.argmin(longitudes)
     else:
         print("Route starting point not specified")
@@ -175,8 +172,7 @@ def plot_route(route_name):
     plt.show()
 
 
-generate_blocks_params('west_coast_main_line')
-generate_blocks_params('east_coast_main_line')
-generate_blocks_params('glasgow_edinburgh_falkirk')
-generate_blocks_params('bristol_parkway_london')
+#generate_blocks_params('west_coast_main_line')
+#generate_blocks_params('east_coast_main_line')
+#generate_blocks_params('glasgow_edinburgh_falkirk')
 

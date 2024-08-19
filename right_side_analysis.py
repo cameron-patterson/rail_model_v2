@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def e_field(exs, eys, section_name, conditions):
+def right_side_two_track(exs, eys, section_name, conditions):
     # Create dictionary of network parameters
     parameters = {"z_sig": 0.0289,  # Signalling rail series impedance (ohms/km)
                   "z_trac": 0.0289,  # Traction return rail series impedance (ohms/km)
@@ -145,35 +145,6 @@ def e_field(exs, eys, section_name, conditions):
     return i_relays_a, i_relays_b
 
 
-def plot_currents(section):
-    ex = np.array([0])
-    ey = np.array([0])
-
-    ia, ib = e_field(ex, ey, section, "moderate")
-
-    fig, ax = plt.subplots(2, 1, figsize=(16, 10))
-    fig.suptitle(str(section))
-    ax[0].plot(ia[0], '.')
-    ax[0].axhline(0.081, linestyle='--', color='limegreen')
-    ax[0].axhline(0.055, linestyle='-', color='tomato')
-    ax[0].set_xlabel("Track Circuit Block")
-    ax[0].set_ylabel("Relay Current (A)")
-
-    ax[1].plot(ib[0], '.')
-    ax[1].axhline(0.081, linestyle='--', color='limegreen')
-    ax[1].axhline(0.055, linestyle='-', color='tomato')
-    ax[1].set_xlabel("Track Circuit Block")
-    ax[1].set_ylabel("Relay Current (A)")
-
-    plt.show()
-
-
-#plot_currents("west_coast_main_line")
-#plot_currents("east_coast_main_line")
-#plot_currents("glasgow_edinburgh_falkirk")
-#plot_currents("bristol_parkway_london")
-
-
-ex = np.arange(-30, 30, 0.1)
-ey = np.arange(-30, 30, 0.1)
-ia, ib = e_field(ex, ey, "west_coast_main_line", "moderate")
+#ex = np.arange(-30, 30, 0.1)
+#ey = np.arange(-30, 30, 0.1)
+#ia, ib = right_side_two_track(ex, ey, "west_coast_main_line", "moderate")

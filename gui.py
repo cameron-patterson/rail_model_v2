@@ -1,5 +1,5 @@
 from tkinter import *
-from e_field_analysis import e_field
+from right_side_analysis import e_field
 import matplotlib.pyplot as plt
 
 conditions = ["Dry", "Moderate", "Wet"]
