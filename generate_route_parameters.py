@@ -69,8 +69,19 @@ def generate_blocks_params(route_name):
     lons = ordered_points[:, 0]
     lats = ordered_points[:, 1]
 
-    blocks_lengths = calculate_block_lengths(lats, lons)
-    angles = calculate_angles(lats, lons)
+    start_blocks = calculate_block_lengths(lats, lons)
+    start_angles = calculate_angles(lats, lons)
+
+    # Split the longer blocks up into multiple and also appends the angles of the new blocks
+    blocks_lengths = np.array([])
+    angles = np.array([])
+    for i in range(0, len(start_blocks)):
+        if start_blocks[i] > 1.6:
+            blocks_lengths = np.append(blocks_lengths, [start_blocks[i] / 2, start_blocks[i] / 2])
+            angles = np.append(angles, [start_angles[i], start_angles[i]])
+        else:
+            blocks_lengths = np.append(blocks_lengths, start_blocks[i])
+            angles = np.append(angles, start_angles[i])
 
     np.savez(route_name + '_lengths_angles.npz', block_lengths=blocks_lengths, angles=angles)
 
