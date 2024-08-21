@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from right_side_analysis import right_side_two_track
-from wrong_side_analysis import wrong_side_two_track
+from wrong_side_analysis import wrong_side_two_track_currents
 
 
 def plot_right_side(ex, ey, section_name, conditions):
@@ -100,9 +100,24 @@ def plot_right_side(ex, ey, section_name, conditions):
     plt.savefig(fname=f"{section_name}_{ex}_{ey}_right_side.jpg")
 
 
-exs = np.array([-10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10])
-eys = np.array([0])
+def plot_wrong_side_block_centre(ex, ey, section_name):
+    starts = np.load("data/axle_positions/" + section_name + "_front_axle_pos_block_centre.npy")
+    for i in range(0, len(starts)):
+        ia, ib = wrong_side_two_track_currents(section_name, i, ex, ey)
+        plt.plot(ia[0], '.')
+        plt.show()
 
+
+
+#exs = np.array([-10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10])
+#eys = np.array([0])
+#for ex in exs:
+#    for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+#        plot_right_side(np.array([ex]), eys, section, "moderate")
+
+
+exs = np.array([-10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10])
+eys = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 for ex in exs:
-    for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
-        plot_right_side(np.array([ex]), eys, section, "moderate")
+    for section in ["glasgow_edinburgh_falkirk"]:
+        plot_wrong_side_block_centre(exs, eys, section)

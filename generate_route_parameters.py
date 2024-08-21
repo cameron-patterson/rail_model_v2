@@ -189,5 +189,6 @@ def plot_route(route_name):
     plt.show()
 
 #generate_blocks_params('west_coast_main_line')
-#generate_blocks_params('east_coast_main_line')
+generate_blocks_params('east_coast_main_line')
 #generate_blocks_params('glasgow_edinburgh_falkirk')
+plot_route("east_coast_main_line")
