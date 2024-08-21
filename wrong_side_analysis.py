@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, eys):
@@ -40,8 +39,8 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     sig_node_indices_b = network_nodes["sig_node_locs_b"]  # Signalling rail node indices for "b" direction
     cb_node_indices_a = network_nodes["cb_node_locs_a"]  # Cross bond node indices for "a" direction
     cb_node_indices_b = network_nodes["cb_node_locs_b"]  # Cross bond node indices for "b" direction
-    trac_node_indices_power_a = network_nodes["trac_node_locs_power_a"]  # Traction return rail relay node indices for "a" direction
-    trac_node_indices_power_b = network_nodes["trac_node_locs_power_b"]  # Traction return rail relay node indices for "b" direction
+    # trac_node_indices_power_a = network_nodes["trac_node_locs_power_a"]  # Traction return rail relay node indices for "a" direction
+    # trac_node_indices_power_b = network_nodes["trac_node_locs_power_b"]  # Traction return rail relay node indices for "b" direction
     trac_node_indices_relay_a = network_nodes["trac_node_locs_relay_a"]  # Traction return rail relay node indices for "a" direction
     trac_node_indices_relay_b = network_nodes["trac_node_locs_relay_b"]  # Traction return rail relay node indices for "b" direction
     sig_node_indices_power_a = network_nodes["sig_node_locs_power_a"]  # Traction return rail power supply node indices for "a" direction
@@ -538,23 +537,3 @@ def wrong_side_two_track(section_name, conditions, axle_pos_a, axle_pos_b, exs, 
     return i_relays_all_a, i_relays_all_b
 
 
-#axle_positions = np.load("data/axle_positions/at_end_axle_pos_glasgow_edinburgh_falkirk.npz")
-#axle_positions_a = axle_positions["at_end_axle_pos_a"]
-#axle_positions_b = axle_positions["at_end_axle_pos_b"]
-#ex = np.array([0])
-#ey = np.array([0])
-
-#for i in range(0, 100):
-#    ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", axle_positions_a, axle_positions_b, ex, ey)
-#    print(i)
-
-
-
-#fig, ax = plt.subplots(2, 1)
-#ax[0].plot(ia[0], '.')
-#ax[0].axhline(0.081, c="g")
-#ax[0].axhline(0.055, c='r')
-#ax[1].plot(ib[0], '.')
-#ax[1].axhline(0.081, c="g")
-#ax[1].axhline(0.055, c='r')
-#plt.show()

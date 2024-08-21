@@ -75,15 +75,21 @@ def generate_blocks_params(route_name):
     # Split the longer blocks up into multiple and also appends the angles of the new blocks
     blocks_lengths = np.array([])
     angles = np.array([])
+    double_locs = np.array([], dtype=int)
+    j = 0
     for i in range(0, len(start_blocks)):
         if start_blocks[i] > 1.6:
             blocks_lengths = np.append(blocks_lengths, [start_blocks[i] / 2, start_blocks[i] / 2])
             angles = np.append(angles, [start_angles[i], start_angles[i]])
+            double_locs = np.append(double_locs, [j, j+1])
+            j += 2
         else:
             blocks_lengths = np.append(blocks_lengths, start_blocks[i])
             angles = np.append(angles, start_angles[i])
+            j += 1
 
     np.savez(route_name + '_lengths_angles.npz', block_lengths=blocks_lengths, angles=angles)
+    np.save(route_name + '_double_locs', double_locs)
 
 
 def calculate_block_lengths(latitudes, longitudes):
@@ -182,8 +188,6 @@ def plot_route(route_name):
     ax.plot(lons[0], lats[0], 'x', color='red')
     plt.show()
 
-
 #generate_blocks_params('west_coast_main_line')
 #generate_blocks_params('east_coast_main_line')
 #generate_blocks_params('glasgow_edinburgh_falkirk')
-

@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -33,11 +32,11 @@ def right_side_two_track(exs, eys, section_name, conditions):
     # Load in section network node indices
     network_nodes = np.load("data\\network_parameters\\" + section_name + "\\nodes_" + section_name + ".npz")
     n_nodes = network_nodes["n_nodes"]
-    n_nodes_trac = network_nodes["n_nodes_trac"]
+    # n_nodes_trac = network_nodes["n_nodes_trac"]
     trac_node_locs_a = network_nodes["trac_node_locs_a"]
     trac_node_locs_b = network_nodes["trac_node_locs_b"]
-    sig_node_locs_a = network_nodes["sig_node_locs_a"]
-    sig_node_locs_b = network_nodes["sig_node_locs_b"]
+    # sig_node_locs_a = network_nodes["sig_node_locs_a"]
+    # sig_node_locs_b = network_nodes["sig_node_locs_b"]
     cb_node_locs_a = network_nodes["cb_node_locs_a"]
     cb_node_locs_b = network_nodes["cb_node_locs_b"]
     trac_node_locs_relay_a = network_nodes["trac_node_locs_relay_a"]
@@ -143,8 +142,3 @@ def right_side_two_track(exs, eys, section_name, conditions):
     i_relays_b = i_relays_b.T
 
     return i_relays_a, i_relays_b
-
-
-#ex = np.arange(-30, 30, 0.1)
-#ey = np.arange(-30, 30, 0.1)
-#ia, ib = right_side_two_track(ex, ey, "west_coast_main_line", "moderate")
