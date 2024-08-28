@@ -104,20 +104,44 @@ def plot_wrong_side_block_centre(ex, ey, section_name):
     starts = np.load("data/axle_positions/" + section_name + "_front_axle_pos_block_centre.npy")
     for i in range(0, len(starts)):
         ia, ib = wrong_side_two_track_currents(section_name, i, ex, ey)
-        plt.plot(ia[0], '.')
-        plt.show()
+
+        fig = plt.figure(figsize=(10, 6))
+        gs = gridspec.GridSpec(2, 1)
+        ax0 = plt.subplot(gs[0])
+        ax1 = plt.subplot(gs[1])
+
+        ax0.plot(ia[30], '.')
+        ax1.plot(ib[30], '.')
+        ax0.axhline(0.055, color="tomato", linestyle="-")
+        ax0.axhline(0.081, color="limegreen", linestyle="--")
+        ax0.set_xlabel("Track Circuit Index")
+        ax0.set_ylabel("Current Through Relay (A)")
+        ax1.axhline(0.055, color="tomato", linestyle="-")
+        ax1.axhline(0.081, color="limegreen", linestyle="--")
+        ax1.set_xlabel("Track Circuit Index")
+        ax1.set_ylabel("Current Through Relay (A)")
+
+        if section_name == "west_coast_main_line":
+            section_label = "West Coast Main Line"
+        elif section_name == "east_coast_main_line":
+            section_label = "East Coast Main Line"
+        elif section_name == "glasgow_edinburgh_falkirk":
+            section_label = "Glasgow to Edinburgh via Falkirk High"
+        else:
+            section_label = "ERROR"
+        plt.suptitle(f"{section_label}: Ex = {ex[30]} V/km; Ey = {ey[30]} V/km")
+        plt.subplots_adjust(hspace=0.3)
+        plt.savefig(fname=f"{section_name}_{ex[30]}_{ex[30]}_wrong_side_index{i}.jpg")
 
 
-
-#exs = np.array([-10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10])
-#eys = np.array([0])
-#for ex in exs:
+#eys = np.array([-10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10])
+#exs = np.array([0])
+#for ey in eys:
 #    for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
-#        plot_right_side(np.array([ex]), eys, section, "moderate")
+#        plot_right_side(exs, np.array([ey]), section, "moderate")
 
 
-exs = np.array([-10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 10])
-eys = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-for ex in exs:
-    for section in ["glasgow_edinburgh_falkirk"]:
-        plot_wrong_side_block_centre(exs, eys, section)
+for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+    exs = np.arange(-30, 31, 1)
+    eys = np.zeros(len(exs))
+    plot_wrong_side_block_centre(exs, eys, section)

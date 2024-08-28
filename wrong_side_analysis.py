@@ -472,120 +472,131 @@ def wrong_side_two_track_currents(section_name, index, exs, eys):
     trac_node_indices_axle_b = new_node_indices["trac_node_indices_axle_b"]
 
     # Currents
-    i_relays_all_a = np.zeros([len(exs), len(trac_node_indices_relay_a)])
-    i_relays_all_b = np.zeros([len(exs), len(trac_node_indices_relay_b)])
-    for es in range(0, len(exs)):
-        # Set up current matrix
-        j_matrix = np.zeros(n_nodes_restructured)
-        ex = exs[es]
-        ey = eys[es]
-        # "a" first
-        e_x_par_trac_a = ex * np.cos(0.5 * np.pi - trac_sb_angles_a)  # Component of Ex parallel to traction return rail of "a"
-        e_y_par_trac_a = ey * np.cos(trac_sb_angles_a)  # Component of Ey parallel to traction return rail of "a"
-        e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a  # Component of E parallel to traction return rail of "a"
-        e_x_par_sig_a = ex * np.cos(0.5 * np.pi - sig_sb_angles_a)  # Same for signalling rail
-        e_y_par_sig_a = ey * np.cos(sig_sb_angles_a)
-        e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
-        i_trac_a = e_par_trac_a / parameters["z_trac"]  # Equivalent current source for the traction return rail
-        i_sig_a = e_par_sig_a / parameters["z_sig"]  # Same for the signalling rail
-        # "b" second
-        e_x_par_trac_b = ex * np.cos(0.5 * np.pi - trac_sb_angles_b)
-        e_y_par_trac_b = ey * np.cos(trac_sb_angles_b)
-        e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
-        e_x_par_sig_b = ex * np.cos(0.5 * np.pi - sig_sb_angles_b)
-        e_y_par_sig_b = ey * np.cos(sig_sb_angles_b)
-        e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
-        i_sig_b = e_par_sig_b / parameters["z_sig"]
-        i_trac_b = e_par_trac_b / parameters["z_trac"]
+    # Set up current matrix
+    j_matrix = np.zeros([len(exs), n_nodes_restructured])
 
-        # 'a' first
-        index_sb = np.arange(0, len(all_trac_node_indices_a), 1)
-        # continuous rail first node
-        j_matrix[trac_node_indices_a[0]] = -i_trac_a[0]
-        # continuous rail centre nodes
-        for i in index_sb[1:-1]:
-            pos = all_trac_node_indices_a[i]
-            if pos in cb_node_indices_a:
-                j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
-            elif pos in trac_node_indices_axle_a:
-                j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i]
-            elif (pos not in cb_node_indices_a) and (pos not in trac_node_indices_axle_a):
-                j_matrix[pos] = i_trac_a[i - 1] - i_trac_a[i] - parameters["i_power"]
-            else:
-                print('Error with trac a j_matrix')
-        # continuous rail last node
-        j_matrix[trac_node_indices_a[-1]] = i_trac_a[-1] - parameters["i_power"]
-        # insulated rail nodes
-        n_sb = 0
-        for i in all_sig_node_indices_a:
-            if i in sig_node_indices_relay_a:
-                j_matrix[i] = -i_sig_a[n_sb]
-            elif i in sig_node_indices_power_a:
-                j_matrix[i] = i_sig_a[n_sb] + parameters["i_power"]
-                n_sb = n_sb + 1
-            elif i in sig_axle_node_indices_a:
-                j_matrix[i] = i_sig_a[n_sb] - i_sig_a[n_sb + 1]
-                n_sb = n_sb + 1
-            else:
-                print('Error with sig a j_matrix')
+    # "a" first
+    e_x_par_trac_a = np.outer(exs, np.cos(0.5 * np.pi - trac_sb_angles_a))
+    e_y_par_trac_a = np.outer(eys, np.cos(trac_sb_angles_a))
+    e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a
+    e_x_par_sig_a = np.outer(exs, np.cos(0.5 * np.pi - sig_sb_angles_a))
+    e_y_par_sig_a = np.outer(eys, np.cos(sig_sb_angles_a))
+    e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
+    i_sig_a = e_par_sig_a / parameters["z_sig"]
+    i_trac_a = e_par_trac_a / parameters["z_trac"]
 
-        # 'b' second
-        index_sb = np.arange(0, len(all_trac_node_indices_b), 1)
-        # continuous rail first node
-        j_matrix[trac_node_indices_b[0]] = i_trac_b[0] - parameters["i_power"]
-        # continuous rail centre nodes
-        for i in index_sb[1:-1]:
-            pos = all_trac_node_indices_b[i]
-            if pos in cb_node_indices_b:
-                j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
-            elif pos in trac_node_indices_axle_b:
-                j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1]
-            elif (pos not in cb_node_indices_b) and (pos not in trac_node_indices_axle_b):
-                j_matrix[pos] = i_trac_b[i] - i_trac_b[i - 1] - parameters["i_power"]
-            else:
-                print('Error with trac b j_matrix')
-        # continuous rail last node
-        j_matrix[trac_node_indices_b[-1]] = -i_trac_b[-1]
+    # "b" second
+    e_x_par_trac_b = np.outer(exs, np.cos(0.5 * np.pi - trac_sb_angles_b))
+    e_y_par_trac_b = np.outer(eys, np.cos(trac_sb_angles_b))
+    e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
+    e_x_par_sig_b = np.outer(exs, np.cos(0.5 * np.pi - sig_sb_angles_b))
+    e_y_par_sig_b = np.outer(eys, np.cos(sig_sb_angles_b))
+    e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
+    i_sig_b = e_par_sig_b / parameters["z_sig"]
+    i_trac_b = e_par_trac_b / parameters["z_trac"]
 
-        # insulated rail nodes
-        n_sb = 0
-        for i in all_sig_node_indices_b:
-            if i in sig_node_indices_power_b:
-                j_matrix[i] = parameters["i_power"] + i_sig_b[n_sb]
-            elif i in sig_node_indices_relay_b:
-                j_matrix[i] = -i_sig_b[n_sb]
-                n_sb = n_sb + 1
-            elif i in sig_axle_node_indices_b:
-                j_matrix[i] = i_sig_b[n_sb + 1] - i_sig_b[n_sb]
-                n_sb = n_sb + 1
-            else:
-                print('Error with sig b j_matrix')
+    # "a" first
+    # Traction return rail first node
+    j_matrix[:, all_trac_node_indices_a[0]] = -i_trac_a[:, 0]
+    # Traction return rail centre nodes
+    # Cross bond nodes
+    mask = np.isin(all_trac_node_indices_a, cb_node_indices_a)
+    indices = np.where(mask)[0]
+    j_matrix[:, cb_node_indices_a] = i_trac_a[:, indices - 1] - i_trac_a[:, indices]
+    # Axle nodes
+    mask = np.isin(all_trac_node_indices_a, trac_node_indices_axle_a)
+    indices = np.where(mask)[0]
+    j_matrix[:, trac_node_indices_axle_a] = i_trac_a[:, indices - 1] - i_trac_a[:, indices]
+    # Non-cross bond or axle nodes
+    mask = np.isin(all_trac_node_indices_a, cb_node_indices_a) | np.isin(all_trac_node_indices_a, trac_node_indices_axle_a)
+    indices = np.where(~mask)[0][1:-1]
+    mask_del = ~np.isin(all_trac_node_indices_a, cb_node_indices_a) & ~np.isin(all_trac_node_indices_a, trac_node_indices_axle_a)
+    non_cb_axle_node_locs_centre_a = all_trac_node_indices_a[mask_del][1:-1]
+    j_matrix[:, non_cb_axle_node_locs_centre_a] = i_trac_a[:, indices - 1] - i_trac_a[:, indices] - parameters["i_power"]
+    # Traction return rail last node
+    j_matrix[:, all_trac_node_indices_a[-1]] = i_trac_a[:, -1] - parameters["i_power"]
+    # Signalling rail nodes
+    sig_relay_axle = all_sig_node_indices_a[np.where(~np.isin(all_sig_node_indices_a, sig_node_indices_power_a))[0]]
+    split_blocks = np.unique(np.sort(np.append(np.where(np.isin(sig_relay_axle, sig_axle_node_indices_a))[0], np.where(np.isin(sig_relay_axle, sig_axle_node_indices_a))[0] - 1)))
+    all_blocks = range(0, len(i_sig_a[0]))
+    whole_blocks = np.where(~np.isin(all_blocks, split_blocks))[0]
+    whole_blocks_start = sig_relay_axle[whole_blocks]
+    whole_blocks_end = whole_blocks_start + 1
+    split_blocks_start = sig_relay_axle[np.where(~np.isin(sig_relay_axle, sig_axle_node_indices_a) & ~np.isin(sig_relay_axle, whole_blocks_start))[0]]
+    split_blocks_end = split_blocks_start + 1
+    split_blocks_mid = sig_relay_axle[np.where(np.isin(sig_relay_axle, sig_axle_node_indices_a))[0]]
+    j_matrix[:, all_sig_node_indices_a[np.where(np.isin(all_sig_node_indices_a, whole_blocks_start))[0]]] = -i_sig_a[:, whole_blocks]
+    j_matrix[:, all_sig_node_indices_a[np.where(np.isin(all_sig_node_indices_a, whole_blocks_end))[0]]] = i_sig_a[:, whole_blocks] + parameters["i_power"]
+    j_matrix[:, all_sig_node_indices_a[np.where(np.isin(all_sig_node_indices_a, split_blocks_start))[0]]] = -i_sig_a[:, np.where(np.isin(sig_relay_axle, split_blocks_start))[0]]
+    j_matrix[:, all_sig_node_indices_a[np.where(np.isin(all_sig_node_indices_a, split_blocks_end))[0]]] = i_sig_a[:, split_blocks[np.where(~np.isin(split_blocks, np.where(np.isin(sig_relay_axle, split_blocks_mid))[0] - 1))[0]]] + parameters["i_power"]
+    j_matrix[:, all_sig_node_indices_a[np.where(np.isin(all_sig_node_indices_a, split_blocks_mid))[0]]] = i_sig_a[:, np.where(np.isin(sig_relay_axle, split_blocks_mid))[0] - 1] - i_sig_a[:, np.where(np.isin(sig_relay_axle, split_blocks_mid))[0]]
 
-        # Calculate voltage matrix
-        # Calculate inverse of admittance matrix
-        y_matrix_inv = np.linalg.inv(y_matrix_restructured)
+    # "b" second
+    # Traction return rail first node
+    j_matrix[:, all_trac_node_indices_b[0]] = i_trac_b[:, 0] - parameters["i_power"]
+    # Traction return rail centre nodes
+    # Cross bond nodes
+    mask = np.isin(all_trac_node_indices_b, cb_node_indices_b)
+    indices = np.where(mask)[0]
+    j_matrix[:, cb_node_indices_b] = i_trac_b[:, indices] - i_trac_b[:, indices - 1]
+    # Axle nodes
+    mask = np.isin(all_trac_node_indices_b, trac_node_indices_axle_b)
+    indices = np.where(mask)[0]
+    j_matrix[:, trac_node_indices_axle_b] = i_trac_b[:, indices] - i_trac_b[:, indices - 1]
+    # Non-cross bond or axle nodes
+    mask = np.isin(all_trac_node_indices_b, cb_node_indices_b) | np.isin(all_trac_node_indices_b,
+                                                                         trac_node_indices_axle_b)
+    indices = np.where(~mask)[0][1:-1]
+    mask_del = ~np.isin(all_trac_node_indices_b, cb_node_indices_b) & ~np.isin(all_trac_node_indices_b,
+                                                                               trac_node_indices_axle_b)
+    non_cb_axle_node_locs_centre_b = all_trac_node_indices_b[mask_del][1:-1]
+    j_matrix[:, non_cb_axle_node_locs_centre_b] = i_trac_b[:, indices] - i_trac_b[:, indices - 1] - parameters[
+        "i_power"]
+    # Traction return rail last node
+    j_matrix[:, all_trac_node_indices_b[-1]] = -i_trac_b[:, -1]
+    # Signalling rail nodes
+    sig_power_axle = all_sig_node_indices_b[np.where(~np.isin(all_sig_node_indices_b, sig_node_indices_relay_b))[0]]
+    split_blocks = np.unique(np.sort(np.append(np.where(np.isin(sig_power_axle, sig_axle_node_indices_b))[0],
+                                               np.where(np.isin(sig_power_axle, sig_axle_node_indices_b))[0] - 1)))
+    all_blocks = range(0, len(i_sig_b[0]))
+    whole_blocks = np.where(~np.isin(all_blocks, split_blocks))[0]
+    whole_blocks_start = sig_power_axle[whole_blocks]
+    whole_blocks_end = whole_blocks_start + 1
+    split_blocks_start = sig_power_axle[
+        np.where(~np.isin(sig_power_axle, sig_axle_node_indices_b) & ~np.isin(sig_power_axle, whole_blocks_start))[0]]
+    split_blocks_end = split_blocks_start + 1
+    split_blocks_mid = sig_power_axle[np.where(np.isin(sig_power_axle, sig_axle_node_indices_b))[0]]
+    j_matrix[:, all_sig_node_indices_b[np.where(np.isin(all_sig_node_indices_b, whole_blocks_start))[0]]] = i_sig_b[:, whole_blocks] + parameters["i_power"]
+    j_matrix[:, all_sig_node_indices_b[np.where(np.isin(all_sig_node_indices_b, whole_blocks_end))[0]]] = -i_sig_b[:, whole_blocks]
+    j_matrix[:, all_sig_node_indices_b[np.where(np.isin(all_sig_node_indices_b, split_blocks_start))[0]]] = i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_start))[0]] + parameters["i_power"]
+    j_matrix[:, all_sig_node_indices_b[np.where(np.isin(all_sig_node_indices_b, split_blocks_end))[0]]] = i_sig_b[:, split_blocks[np.where(~np.isin(split_blocks, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1))[0]]]
+    j_matrix[:, all_sig_node_indices_b[np.where(np.isin(all_sig_node_indices_b, split_blocks_mid))[0]]] = -i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1] + i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_mid))[0]]
 
-        # Calculate nodal voltages
-        v_matrix = np.matmul(y_matrix_inv, j_matrix)
+    # Calculate voltage matrix
+    # Calculate inverse of admittance matrix
+    y_matrix_inv = np.linalg.inv(y_matrix_restructured)
 
-        # Calculate relay voltages and currents
-        # "a" first
-        v_relay_top_node_a = v_matrix[sig_node_indices_relay_a]
-        v_relay_bottom_node_a = v_matrix[trac_node_indices_relay_a]
-        v_relay_a = v_relay_top_node_a - v_relay_bottom_node_a
+    # Calculate nodal voltages
+    v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
-        # "b" first
-        v_relay_top_node_b = v_matrix[sig_node_indices_relay_b]
-        v_relay_bottom_node_b = v_matrix[trac_node_indices_relay_b]
-        v_relay_b = v_relay_top_node_b - v_relay_bottom_node_b
+    # Calculate relay voltages and currents
+    # "a" first
+    v_relay_top_node_a = v_matrix[sig_node_indices_relay_a]
+    v_relay_bottom_node_a = v_matrix[trac_node_indices_relay_a]
+    v_relay_a = v_relay_top_node_a - v_relay_bottom_node_a
 
-        i_relays_a = v_relay_a / parameters["r_relay"]
-        i_relays_b = v_relay_b / parameters["r_relay"]
+    # "b" first
+    v_relay_top_node_b = v_matrix[sig_node_indices_relay_b]
+    v_relay_bottom_node_b = v_matrix[trac_node_indices_relay_b]
+    v_relay_b = v_relay_top_node_b - v_relay_bottom_node_b
 
-        i_relays_all_a[es, :] = i_relays_a
-        i_relays_all_b[es, :] = i_relays_b
+    i_relays_a = v_relay_a / parameters["r_relay"]
+    i_relays_b = v_relay_b / parameters["r_relay"]
 
-    return i_relays_all_a, i_relays_all_b
+    i_relays_a = i_relays_a.T
+    i_relays_b = i_relays_b.T
+
+    return i_relays_a, i_relays_b
 
 
 def gen_params_block_centre():
@@ -603,5 +614,4 @@ def gen_params_block_centre():
 
 
 #wrong_side_two_track_y_matrix("glasgow_edinburgh_falkirk", "moderate", np.array([25]), np.array([45]))
-#ia, ib = wrong_side_two_track_currents("glasgow_edinburgh_falkirk", 0, np.array([10]), np.array([0]))
-
+#ia, ib = wrong_side_two_track_currents("west_coast_main_line", 0, np.array([0, 1, 2, 3, 4, 5, 6]), np.array([0, 1, 2, 3, 4, 5, 6]))
