@@ -49,32 +49,32 @@ def calculate_train_speeds(train_timetable):
 
 
 # Load the section block lengths
-data = np.load("data/rail_data/" + section + "/" + section + "_lengths_angles.npz")
+data = np.load("data/rail_data/" + section + "/" + section + "_distances_bearings.npz")
 if direction == "a":
-    blocks = data["block_lengths"]
+    blocks = data["distances"]
     blocks_sum = np.cumsum(blocks) - 0.001  # Set positions to be 1m back from end of block
 elif direction == "b":
-    blocks = data["block_lengths"]
+    blocks = data["distances"]
     blocks = np.insert(blocks[0:-1], 0, 0)
     blocks_sum = np.cumsum(blocks) + 0.001  # Set positions to be 1m back from end of block
 else:
     print("Error")
 
 # Load the Excel file
-df = pd.read_excel("data/" + section + "_timetable.xlsx", sheet_name="direction_" + direction)
+df = pd.read_excel("data/axle_positions/" + section + "_timetable.xlsx", sheet_name="direction_" + direction)
 
 # Start and end times
-start_time = datetime(2024, 8, 5, 6, 0)
+start_time = datetime(2024, 8, 5, 0, 0)
 end_time = datetime(2024, 8, 5, 23, 59)
 
 # Generate datetime objects at 1-minute intervals using list comprehension
 timeseries_day = [start_time + timedelta(minutes=i) for i in range(int((end_time - start_time).total_seconds() / 60) + 1)]
 
-# Make 2D array for train positions in the day
-train_pos_day = np.zeros((36, len(timeseries_day)))
-
 # Convert each row of the timetable to an array
 timetable_rows_as_arrays = [row.to_numpy() for index, row in df.iterrows()]
+
+# Make 2D array for train positions in the day
+train_pos_day = np.zeros((len(timetable_rows_as_arrays)-1, len(timeseries_day)))
 
 station_block_index = timetable_rows_as_arrays[0][1:]  # block indices for the stations from first row of timetable
 

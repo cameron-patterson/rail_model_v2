@@ -236,5 +236,5 @@ def plot_e_thresholds_histogram(section):
     plt.savefig(fname="histogram_right_side_thresholds_"+str(section)+".pdf")
 
 
-for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk", "bristol_parkway_london"]:
-    plot_e_thresholds_histogram(sec)
+#for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk", "bristol_parkway_london"]:
+#    plot_e_thresholds_histogram(sec)

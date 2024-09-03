@@ -30,9 +30,9 @@ def build_network_two_track(section_name, conditions):
 
     # Load in the lengths and angles of the track circuit blocks
     # Note: zero degrees is directly eastwards, with positive values counter-clockwise and negative values clockwise
-    data = np.load("data/rail_data/" + section_name + "/" + section_name + "_lengths_angles.npz")
-    blocks = data["block_lengths"]
-    angles = data["angles"]
+    data = np.load("data/rail_data/" + section_name + "/" + section_name + "_distances_bearings.npz")
+    blocks = data["distances"]
+    bearings = data["bearings"]
     n_blocks = int(len(blocks))  # Number of blocks in this section
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
@@ -287,13 +287,13 @@ def build_network_two_track(section_name, conditions):
     n_b = 0
     for n_sb in range(0, len(cumsum_sb_a)):
         if cumsum_sb_a[n_sb] < blocks_sum[n_b]:
-            trac_angles_a[n_sb] = angles[n_b]
+            trac_angles_a[n_sb] = bearings[n_b]
         elif cumsum_sb_a[n_sb] == blocks_sum[n_b]:
-            trac_angles_a[n_sb] = angles[n_b]
+            trac_angles_a[n_sb] = bearings[n_b]
             n_b = n_b + 1
         else:
             print("Error")
-    sig_angles_a = angles
+    sig_angles_a = bearings
 
     # "b" second
     trac_angles_b = np.zeros(len(trac_sub_blocks))
@@ -301,14 +301,14 @@ def build_network_two_track(section_name, conditions):
     n_b = 0
     for n_sb in range(0, len(cumsum_sb_b)):
         if cumsum_sb_b[n_sb] < blocks_sum[n_b]:
-            trac_angles_b[n_sb] = angles[n_b]
+            trac_angles_b[n_sb] = bearings[n_b]
         elif cumsum_sb_b[n_sb] == blocks_sum[n_b]:
-            trac_angles_b[n_sb] = angles[n_b]
+            trac_angles_b[n_sb] = bearings[n_b]
             n_b = n_b + 1
         else:
             print("Error")
-    trac_angles_b = trac_angles_b - np.pi
-    sig_angles_b = angles - np.pi
+    trac_angles_b = (trac_angles_b + np.pi) % (2*np.pi)
+    sig_angles_b = (bearings + np.pi) % (2*np.pi)
 
     # Save in a zip file to be used in the analysis
     np.savez("angles_"+section_name, trac_angles_a=trac_angles_a, trac_angles_b=trac_angles_b, sig_angles_a=sig_angles_a, sig_angles_b=sig_angles_b)

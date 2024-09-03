@@ -141,7 +141,7 @@ def plot_wrong_side_block_centre(ex, ey, section_name):
 #        plot_right_side(exs, np.array([ey]), section, "moderate")
 
 
-for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
-    exs = np.arange(-30, 31, 1)
-    eys = np.zeros(len(exs))
-    plot_wrong_side_block_centre(exs, eys, section)
+#for section in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+#    exs = np.arange(-30, 31, 1)
+#    eys = np.zeros(len(exs))
+#    plot_wrong_side_block_centre(exs, eys, section)

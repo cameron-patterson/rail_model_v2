@@ -1,5 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # Create dictionary of network parameters
@@ -23,7 +23,7 @@ parameters = {"z_sig": 0.0289,  # Signalling rail series impedance (ohms/km)
               "y_axle": 1 / 251e-4}  # Axle admittance (siemens)
 
 
-def wrong_side_two_track_y_matrix(section_name, conditions, axle_pos_a, axle_pos_b, index):
+def wrong_side_two_track(section_name, conditions, exs, eys, axle_pos_a, axle_pos_b):
     # Load in network sub block lengths and angles for the chosen section
     sub_block_lengths = np.load("data\\network_parameters\\" + section_name + "\\sub_blocks_" + section_name + ".npz")
     trac_node_positions = sub_block_lengths["blocks_sum_cb"]  # Positions of nodes along the traction return rail (km)
@@ -422,75 +422,26 @@ def wrong_side_two_track_y_matrix(section_name, conditions, axle_pos_a, axle_pos
     block_indices_sig_b = np.searchsorted(sig_sub_blocks_sums, cumsum_sig_sb_b)
     sig_sb_angles_b = block_angles_b[block_indices_sig_b]
 
-    # Save parameters to be used in the analysis
-    np.savez("sb_angles_" + section_name + "_" + str(index), trac_sb_angles_a=trac_sb_angles_a, trac_sb_angles_b=trac_sb_angles_b,
-             sig_sb_angles_a=sig_sb_angles_a, sig_sb_angles_b=sig_sb_angles_b)
-    np.save("y_matrix_restructured_" + section_name + "_" + str(index), y_matrix_restructured)
-    np.savez("new_node_indices_" + section_name + "_" + str(index), n_nodes_restructured=n_nodes_restructured,
-             all_trac_node_indices_a=all_trac_node_indices_a, all_trac_node_indices_b=all_trac_node_indices_b,
-             all_sig_node_indices_a=all_sig_node_indices_a, all_sig_node_indices_b=all_sig_node_indices_b,
-             sig_axle_node_indices_a=sig_axle_node_indices_a, sig_axle_node_indices_b=sig_axle_node_indices_b,
-             trac_node_indices_axle_a=trac_node_indices_axle_a, trac_node_indices_axle_b=trac_node_indices_axle_b)
-
-
-def wrong_side_two_track_currents(section_name, index, exs, eys):
-    # Load in network nodal indices for the chosen section
-    network_nodes = np.load("data\\network_parameters\\" + section_name + "\\nodes_" + section_name + ".npz")
-    n_nodes = network_nodes["n_nodes"]  # Total number of nodes in the section
-    trac_node_indices_a = network_nodes["trac_node_locs_a"]  # Traction return rail node indices for "a" direction
-    trac_node_indices_b = network_nodes["trac_node_locs_b"]  # Traction return rail node indices for "b" direction
-    sig_node_indices_a = network_nodes["sig_node_locs_a"]  # Signalling rail node indices for "a" direction
-    sig_node_indices_b = network_nodes["sig_node_locs_b"]  # Signalling rail node indices for "b" direction
-    cb_node_indices_a = network_nodes["cb_node_locs_a"]  # Cross bond node indices for "a" direction
-    cb_node_indices_b = network_nodes["cb_node_locs_b"]  # Cross bond node indices for "b" direction
-    # trac_node_indices_power_a = network_nodes["trac_node_locs_power_a"]  # Traction return rail relay node indices for "a" direction
-    # trac_node_indices_power_b = network_nodes["trac_node_locs_power_b"]  # Traction return rail relay node indices for "b" direction
-    trac_node_indices_relay_a = network_nodes["trac_node_locs_relay_a"]  # Traction return rail relay node indices for "a" direction
-    trac_node_indices_relay_b = network_nodes["trac_node_locs_relay_b"]  # Traction return rail relay node indices for "b" direction
-    sig_node_indices_power_a = network_nodes["sig_node_locs_power_a"]  # Traction return rail power supply node indices for "a" direction
-    sig_node_indices_power_b = network_nodes["sig_node_locs_power_b"]  # Traction return rail power supply node indices for "b" direction
-    sig_node_indices_relay_a = network_nodes["sig_node_locs_relay_a"]  # Signalling rail relay node indices for "a" direction
-    sig_node_indices_relay_b = network_nodes["sig_node_locs_relay_b"]  # Signalling rail relay node indices for "b" direction
-
-    block_angles = np.load("data\\network_parameters\\" + section_name + "\\wrong_side\\sb_angles\\sb_angles_" + section_name + "_" + str(index) + ".npz")
-    trac_sb_angles_a = block_angles["trac_sb_angles_a"]
-    sig_sb_angles_a = block_angles["sig_sb_angles_a"]
-    trac_sb_angles_b = block_angles["trac_sb_angles_b"]
-    sig_sb_angles_b = block_angles["sig_sb_angles_b"]
-
-    y_matrix_restructured = np.load("data\\network_parameters\\" + section_name + "\\wrong_side\\y_matrices\\y_matrix_restructured_" + section_name + "_" + str(index) + ".npy")
-
-    new_node_indices = np.load("data\\network_parameters\\" + section_name + "\\wrong_side\\new_node_indices\\new_node_indices_" + section_name + "_" + str(index) + ".npz")
-    n_nodes_restructured = new_node_indices["n_nodes_restructured"]
-    all_trac_node_indices_a = new_node_indices["all_trac_node_indices_a"]
-    all_trac_node_indices_b = new_node_indices["all_trac_node_indices_b"]
-    all_sig_node_indices_a = new_node_indices["all_sig_node_indices_a"]
-    all_sig_node_indices_b = new_node_indices["all_sig_node_indices_b"]
-    sig_axle_node_indices_a = new_node_indices["sig_axle_node_indices_a"]
-    sig_axle_node_indices_b = new_node_indices["sig_axle_node_indices_b"]
-    trac_node_indices_axle_a = new_node_indices["trac_node_indices_axle_a"]
-    trac_node_indices_axle_b = new_node_indices["trac_node_indices_axle_b"]
-
     # Currents
     # Set up current matrix
     j_matrix = np.zeros([len(exs), n_nodes_restructured])
 
     # "a" first
-    e_x_par_trac_a = np.outer(exs, np.cos(0.5 * np.pi - trac_sb_angles_a))
-    e_y_par_trac_a = np.outer(eys, np.cos(trac_sb_angles_a))
+    e_x_par_trac_a = np.outer(exs, np.cos(trac_sb_angles_a))
+    e_y_par_trac_a = np.outer(eys, np.sin(trac_sb_angles_a))
     e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a
-    e_x_par_sig_a = np.outer(exs, np.cos(0.5 * np.pi - sig_sb_angles_a))
-    e_y_par_sig_a = np.outer(eys, np.cos(sig_sb_angles_a))
+    e_x_par_sig_a = np.outer(exs, np.cos(sig_sb_angles_a))
+    e_y_par_sig_a = np.outer(eys, np.sin(sig_sb_angles_a))
     e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
     i_sig_a = e_par_sig_a / parameters["z_sig"]
     i_trac_a = e_par_trac_a / parameters["z_trac"]
 
     # "b" second
-    e_x_par_trac_b = np.outer(exs, np.cos(0.5 * np.pi - trac_sb_angles_b))
-    e_y_par_trac_b = np.outer(eys, np.cos(trac_sb_angles_b))
+    e_x_par_trac_b = np.outer(exs, np.cos(trac_sb_angles_b))
+    e_y_par_trac_b = np.outer(eys, np.sin(trac_sb_angles_b))
     e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
-    e_x_par_sig_b = np.outer(exs, np.cos(0.5 * np.pi - sig_sb_angles_b))
-    e_y_par_sig_b = np.outer(eys, np.cos(sig_sb_angles_b))
+    e_x_par_sig_b = np.outer(exs, np.cos(sig_sb_angles_b))
+    e_y_par_sig_b = np.outer(eys, np.sin(sig_sb_angles_b))
     e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
     i_sig_b = e_par_sig_b / parameters["z_sig"]
     i_trac_b = e_par_trac_b / parameters["z_trac"]
@@ -599,19 +550,8 @@ def wrong_side_two_track_currents(section_name, index, exs, eys):
     return i_relays_a, i_relays_b
 
 
-def gen_params_block_centre():
-    for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
-        starts = np.load("data/axle_positions/" + sec + "_front_axle_pos_block_centre.npy")
-        for b in range(0, len(starts)):
-            axles = np.load("data\\axle_positions\\block_centre\\axle_positions_block" + str(b) + "_centre_" + sec + ".npz")
-            axle_pos_a = axles["axle_pos_a"]
-            axle_pos_b = axles["axle_pos_b"]
-
-            wrong_side_two_track_y_matrix(sec, "moderate", axle_pos_a, axle_pos_b, b)
-
-
-
-
-
-#wrong_side_two_track_y_matrix("glasgow_edinburgh_falkirk", "moderate", np.array([25]), np.array([45]))
-#ia, ib = wrong_side_two_track_currents("west_coast_main_line", 0, np.array([0, 1, 2, 3, 4, 5, 6]), np.array([0, 1, 2, 3, 4, 5, 6]))
+#ia, ib = wrong_side_two_track("glasgow_edinburgh_falkirk", "moderate", np.array([0]), np.array([0]), np.array([24]), np.array([24]))
+#fig, ax = plt.subplots(2, 1)
+#ax[0].plot(ia[0], '.')
+#ax[1].plot(ib[0], '.')
+#plt.show()

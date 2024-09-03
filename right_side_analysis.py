@@ -1,7 +1,8 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 
-def right_side_two_track(exs, eys, section_name, conditions):
+def right_side_two_track(section_name, conditions, exs, eys):
     # Create dictionary of network parameters
     parameters = {"z_sig": 0.0289,  # Signalling rail series impedance (ohms/km)
                   "z_trac": 0.0289,  # Traction return rail series impedance (ohms/km)
@@ -50,22 +51,21 @@ def right_side_two_track(exs, eys, section_name, conditions):
     # Set up current matrix
     j_matrix = np.zeros([len(exs), n_nodes])
 
-    # "a" first
-    e_x_par_trac_a = np.outer(exs, np.cos(0.5 * np.pi - trac_angles_a))
-    e_y_par_trac_a = np.outer(eys, np.cos(trac_angles_a))
+    e_x_par_trac_a = np.outer(exs, np.cos(trac_angles_a))
+    e_y_par_trac_a = np.outer(eys, np.sin(trac_angles_a))
     e_par_trac_a = e_x_par_trac_a + e_y_par_trac_a
-    e_x_par_sig_a = np.outer(exs, np.cos(0.5 * np.pi - sig_angles_a))
-    e_y_par_sig_a = np.outer(eys, np.cos(sig_angles_a))
+    e_x_par_sig_a = np.outer(exs, np.cos(sig_angles_a))
+    e_y_par_sig_a = np.outer(eys, np.sin(sig_angles_a))
     e_par_sig_a = e_x_par_sig_a + e_y_par_sig_a
     i_sig_a = e_par_sig_a / parameters["z_sig"]
     i_trac_a = e_par_trac_a / parameters["z_trac"]
 
     # "b" second
-    e_x_par_trac_b = np.outer(exs, np.cos(0.5 * np.pi - trac_angles_b))
-    e_y_par_trac_b = np.outer(eys, np.cos(trac_angles_b))
+    e_x_par_trac_b = np.outer(exs, np.cos(trac_angles_b))
+    e_y_par_trac_b = np.outer(eys, np.sin(trac_angles_b))
     e_par_trac_b = e_x_par_trac_b + e_y_par_trac_b
-    e_x_par_sig_b = np.outer(exs, np.cos(0.5 * np.pi - sig_angles_b))
-    e_y_par_sig_b = np.outer(eys, np.cos(sig_angles_b))
+    e_x_par_sig_b = np.outer(exs, np.cos(sig_angles_b))
+    e_y_par_sig_b = np.outer(eys, np.sin(sig_angles_b))
     e_par_sig_b = e_x_par_sig_b + e_y_par_sig_b
     i_sig_b = e_par_sig_b / parameters["z_sig"]
     i_trac_b = e_par_trac_b / parameters["z_trac"]
