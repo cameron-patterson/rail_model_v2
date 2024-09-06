@@ -147,53 +147,6 @@ def generate_distances_and_bearings(route_name):
     np.savez(route_name + "_distances_bearings", distances=distances, bearings=bearings)
 
 
-# Plots the route using both saved longitudes and latitudes and a calculation based on the distances and bearings
-# Can also be used to save sub block longitudes and latitudes (by removing comment marker in code)
-def plot_route(route_name):
-    # Load in coordinates
-    lo_la = np.load("data/rail_data/" + route_name + "/" + route_name + "_lons_lats.npz")
-    lons = lo_la["lons"]
-    lats = lo_la["lats"]
-
-    # Calculate new coordinates from a starting point
-    dist_bear = np.load("data/rail_data/" + route_name + "/" + route_name + "_distances_bearings.npz")
-    distances = dist_bear["distances"]
-    bearings = np.degrees(dist_bear["bearings"])
-    start_lat = lats[0]  # Starting latitude
-    start_lon = lons[0]  # Starting longitude
-    new_longitudes, new_latitudes = calculate_coordinates(start_lat, start_lon, distances, bearings)
-    #np.savez(route_name + '_sub_block_lons_lats.npz', lons=new_longitudes, lats=new_latitudes)
-
-    # Plotting the result
-    plt.figure(figsize=(10, 6))
-    plt.plot(new_longitudes, new_latitudes, '.-')
-
-    # Annotate index
-    for i in range(len(new_latitudes)):
-        plt.annotate(f'{i}', (new_longitudes[i], new_latitudes[i]), textcoords="offset points", xytext=(5, 5), ha='center')
-
-    # Plot stations
-    if route_name == "east_coast_main_line":
-        plt.annotate(f'Edinburgh', (new_longitudes[0], new_latitudes[0]), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Dunbar', (-2.5134821328340253, 55.99823996612304), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Reston', (-2.1924769773550032, 55.84988437864046), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Berwick', (-2.0110546741013904, 55.77433622590785), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Alnmouth', (-1.6366665682296975, 55.39282177570046), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Morpeth', (-1.6825075373836347, 55.16251338923229), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Newcastle', (-1.6170934508323778, 54.968321202446795), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Durham', (-1.5817184004661433, 54.779373695480714), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Northallerton', (-1.4416085770254263, 54.33295761144301), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'York', (-1.0933138238589433, 53.957945702763695), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Doncaster', (-1.1396136067604175, 53.52195080663149), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'Peterborough', (-0.25009682477053535, 52.57436720972351), textcoords="offset points", xytext=(5, 5), ha='center')
-        plt.annotate(f'London KC', (-0.12462817842099386, 51.53154478277447), textcoords="offset points", xytext=(5, 5), ha='center')
-
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-    plt.title('Original vs. Calculated Coordinates')
-    plt.grid(True)
-    plt.show()
-
 
 
 
