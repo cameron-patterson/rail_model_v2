@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from right_side_analysis import right_side_two_track
-from wrong_side_analysis import wrong_side_two_track_currents
 
 
 def plot_right_side(ex, ey, section_name, conditions):

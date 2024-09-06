@@ -3,7 +3,7 @@ from scipy.io import loadmat
 
 
 def find_closest_grid(section):
-    lon_lats = np.load('data/rail_data/' + section + '/' + section + '_lons_lats.npz')
+    lon_lats = np.load('data/rail_data/' + section + '/' + section + '_sub_block_lons_lats.npz')
     lon_points = lon_lats['lons']
     lat_points = lon_lats['lats']
 
@@ -36,13 +36,19 @@ def gen_storm_e_vals(section):
     ex_blocks = np.zeros((len(closest_grids[:, 0]), len(exs[0, 0, :])))
     ey_blocks = np.zeros((len(closest_grids[:, 0]), len(eys[0, 0, :])))
     for i in range(0, len(closest_grids[:, 0])):
-        ex_blocks[i, :] = exs[closest_grids[i, 0], closest_grids[i, 1], :]
-        ey_blocks[i, :] = eys[closest_grids[i, 0], closest_grids[i, 1], :]
+        ex = exs[closest_grids[i, 0], closest_grids[i, 1], :]
+        ey = eys[closest_grids[i, 0], closest_grids[i, 1], :]
+
+        if np.isnan(ex).any() or np.isnan(ey).any():
+            raise ValueError(f"NaN detected at index {i}, stopping execution.")
+
+        ex_blocks[i, :] = ex
+        ey_blocks[i, :] = ey
 
     np.savez(section + '_may2024_e_blocks.npz', ex_blocks=ex_blocks, ey_blocks=ey_blocks)
 
 
-for sec in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
-    #find_closest_grid(sec)
-    gen_storm_e_vals(sec)
+#for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+#    find_closest_grid(sec)
+#    gen_storm_e_vals(sec)
 
