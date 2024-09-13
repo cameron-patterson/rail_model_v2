@@ -2,11 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import imageio
 from matplotlib.gridspec import GridSpec
+import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 from misoperation_analysis import rail_model_two_track_e_blocks
 from scipy.io import loadmat
 from matplotlib import cm
 import matplotlib.colors as mcolors
+import pandas as pd
 
 
 def generate_timetable_currents(section_name, storm):
@@ -56,7 +58,6 @@ def save_frames(section, storm):
     timetable_axles = np.load("data/axle_positions/timetable/" + section + "_axle_positions_timetable.npz", allow_pickle=True)
     axle_positions_a_all = timetable_axles["axle_pos_a_all"]
     axle_positions_b_all = timetable_axles["axle_pos_b_all"]
-
     axle_positions_a_all = np.concatenate((axle_positions_a_all, axle_positions_a_all))
     axle_positions_b_all = np.concatenate((axle_positions_b_all, axle_positions_b_all))
 
@@ -73,6 +74,11 @@ def save_frames(section, storm):
 
     coast = np.loadtxt("data/storm_e_fields/coastline.txt")
 
+    # Load the sym-h Excel file
+    df = pd.read_excel("data/sym_h/sym_h_may2024.xlsx")
+    spreadsheet_columns_as_arrays = df.values.T
+    sym_h = spreadsheet_columns_as_arrays[6]
+
     for i in range(1000, len(ia_all)):
         print(i)
         ia = ia_all[i]
@@ -83,6 +89,8 @@ def save_frames(section, storm):
 
         current_time = start_time + i * time_increment
         time_str = current_time.strftime("%Y-%m-%d %H:%M")
+        num_values = 2880
+        datetimes = [start_time + i * time_increment for i in range(num_values)]
 
         train_indices_a = []
         for value in axle_positions_a:
@@ -124,41 +132,55 @@ def save_frames(section, storm):
         ib_no_train = np.delete(ib, train_indices_b)
 
         plt.rcParams['font.size'] = '15'
-        fig = plt.figure(figsize=(35, 15))
+        fig = plt.figure(figsize=(15, 16))
 
-        gs = GridSpec(2, 2)
-        ax0 = fig.add_subplot(gs[:-1, :-1])
-        ax1 = fig.add_subplot(gs[1:, :-1])
-        ax2 = fig.add_subplot(gs[:-1, 1:])
-        ax3 = fig.add_subplot(gs[1:, 1:])
-
-        ax0.plot(xs_no_train_a, ia_no_train, linestyle='', marker='o', markersize=6, markerfacecolor='white', markeredgecolor='limegreen', markeredgewidth=1)
-        ax0.plot(xs_train_a, ia_train, linestyle='', marker='>', markersize=6, markerfacecolor='white', markeredgecolor='red', markeredgewidth=1)
-        ax1.plot(xs_no_train_b, ib_no_train, linestyle='', marker='o', markersize=6, markerfacecolor='white', markeredgecolor='limegreen', markeredgewidth=1)
-        ax1.plot(xs_train_b, ib_train, linestyle='', marker='<', markersize=6, markerfacecolor='white', markeredgecolor='red', markeredgewidth=1)
+        if section == "east_coast_main_line" or section == "west_coast_main_line":
+            gs = GridSpec(3, 3)
+            ax0 = fig.add_subplot(gs[1:-1, :-1])
+            ax1 = fig.add_subplot(gs[2:, :-1])
+            ax2 = fig.add_subplot(gs[1:-1, 2:])
+            ax3 = fig.add_subplot(gs[2:, 2:])
+            ax0.plot(xs_no_train_a, ia_no_train, linestyle='', marker='o', markersize=2, markerfacecolor='white', markeredgecolor='limegreen', markeredgewidth=1)
+            ax0.plot(xs_train_a, ia_train, linestyle='', marker='>', markersize=2, markerfacecolor='white', markeredgecolor='red', markeredgewidth=1)
+            ax1.plot(xs_no_train_b, ib_no_train, linestyle='', marker='o', markersize=2, markerfacecolor='white', markeredgecolor='limegreen', markeredgewidth=1)
+            ax1.plot(xs_train_b, ib_train, linestyle='', marker='<', markersize=2, markerfacecolor='white', markeredgecolor='red', markeredgewidth=1)
+        else:
+            gs = GridSpec(3, 2)
+            ax0 = fig.add_subplot(gs[1:-1, :-1])
+            ax1 = fig.add_subplot(gs[2:, :-1])
+            ax2 = fig.add_subplot(gs[1:-1, 1:])
+            ax3 = fig.add_subplot(gs[2:, 1:])
+            ax0.plot(xs_no_train_a, ia_no_train, linestyle='', marker='o', markersize=4, markerfacecolor='white', markeredgecolor='limegreen', markeredgewidth=1)
+            ax0.plot(xs_train_a, ia_train, linestyle='', marker='>', markersize=4, markerfacecolor='white', markeredgecolor='red', markeredgewidth=1)
+            ax1.plot(xs_no_train_b, ib_no_train, linestyle='', marker='o', markersize=4, markerfacecolor='white', markeredgecolor='limegreen', markeredgewidth=1)
+            ax1.plot(xs_train_b, ib_train, linestyle='', marker='<', markersize=4, markerfacecolor='white', markeredgecolor='red', markeredgewidth=1)
 
         levels = [-1000, -500, -400, -300, -200, -100, 0, 100, 200, 300, 400, 500, 1000]
-        cs1 = ax2.contourf(lon_grid, lat_grid, exs[:, :, i], zorder=1, norm=mcolors.CenteredNorm(), levels=levels, cmap="RdBu_r")
+        cs1 = ax2.contourf(lon_grid, lat_grid, exs[:, :, i], zorder=1, norm=mcolors.CenteredNorm(), levels=levels, cmap="RdBu_r", extend='both')
         cbar1 = fig.colorbar(cs1, ax=ax2)
         cbar1.set_ticks(levels)
         cbar1.set_label("Ex (mV/km)")
-        cs2 = ax3.contourf(lon_grid, lat_grid, eys[:, :, i], zorder=1, norm=mcolors.CenteredNorm(), levels=levels, cmap="RdBu_r")
+        cs2 = ax3.contourf(lon_grid, lat_grid, eys[:, :, i], zorder=1, norm=mcolors.CenteredNorm(), levels=levels, cmap="RdBu_r", extend='both')
         cbar2 = fig.colorbar(cs2, ax=ax3)
         cbar2.set_ticks(levels)
         cbar2.set_label("Ey (mV/km)")
 
         ax2.plot(coast[:, 0], coast[:, 1], color='grey', linewidth=1, zorder=2)
         ax2.plot(lon_points, lat_points, '-', linewidth=4, color="black", zorder=3)
-        ax2.set_xlim(-5, -2.5)
-        ax2.set_ylim(55, 57)
         ax2.set_xlabel("Geographic Longitude")
         ax2.set_ylabel("Geographic Latitude")
         ax3.plot(coast[:, 0], coast[:, 1], color='grey', linewidth=1, zorder=2)
         ax3.plot(lon_points, lat_points, '-', linewidth=4, color="black", zorder=3)
-        ax3.set_xlim(-5, -2.5)
-        ax3.set_ylim(55, 57)
         ax3.set_xlabel("Geographic Longitude")
         ax3.set_ylabel("Geographic Latitude")
+
+        ax4 = fig.add_subplot(gs[:1, :])
+        ax4.plot(datetimes, sym_h, linestyle="-", color="black")
+        ax4.axvline(current_time, linestyle="--", color="red")
+        ax4.set_xlim([datetimes[0], datetimes[-1] + time_increment])
+        ax4.set_ylabel("SYM-H (nT)")
+        ax4.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+        ax4.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
 
         def add_common_elements(ax):
             ax.axhline(0.055, color="tomato", linestyle="--")
@@ -175,7 +197,18 @@ def save_frames(section, storm):
 
         if section == "glasgow_edinburgh_falkirk":
             name = "Glasgow to Edinburgh via Falkirk High"
+            ax2.set_xlim(-5, -2.5)
+            ax2.set_ylim(55, 57)
+            ax3.set_xlim(-5, -2.5)
+            ax3.set_ylim(55, 57)
+        if section == "east_coast_main_line":
+            name = "East Coast Main Line"
+            ax2.set_xlim(-3.5, 0)
+            ax2.set_ylim(51, 57)
+            ax3.set_xlim(-3.5, 0)
+            ax3.set_ylim(51, 57)
         plt.suptitle(f'{name}: {time_str}')
+        plt.subplots_adjust(top=0.93)
         #plt.show()
         plt.savefig(f'frames/{section}/{storm}/{section}_{storm}_frame_{i:03d}.png')
         plt.close()
@@ -186,12 +219,12 @@ def make_gif(section, storm):
     frame_files = [f'frames/{section}/{storm}/{section}_{storm}_frame_{i:03d}.png' for i in range(1000, 2880)]
 
     # Create a GIF
-    with imageio.get_writer('my_animation.gif', mode='I', duration=0.1) as writer:
+    with imageio.get_writer(f'{section}_{storm}_animation.gif', mode='I', duration=0.1) as writer:
         for filename in frame_files:
             image = imageio.imread(filename)
             writer.append_data(image)
 
 
-#generate_timetable_currents("glasgow_edinburgh_falkirk", "may2024")
-#save_frames("glasgow_edinburgh_falkirk", "may2024")
-make_gif("glasgow_edinburgh_falkirk", "may2024")
+#generate_timetable_currents("east_coast_main_line", "may2024")
+#save_frames("east_coast_main_line", "may2024")
+make_gif("east_coast_main_line", "may2024")

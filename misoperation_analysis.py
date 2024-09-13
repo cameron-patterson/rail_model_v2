@@ -611,14 +611,14 @@ def rail_model_two_track_e_parallel(section_name, conditions, e_parallel, axle_p
     j_matrix = np.zeros([len(e_parallel), n_nodes])
 
     # "a" first
-    e_par_trac_a = np.full((len(e_parallel), len(trac_sub_blocks_a)), e_parallel)
-    e_par_sig_a = np.full((len(e_parallel), len(sig_sub_blocks_a[~np.isnan(sig_sub_blocks_a)])), e_parallel)
+    e_par_trac_a = np.repeat(e_parallel[:, np.newaxis], len(trac_sub_blocks_a), axis=1)
+    e_par_sig_a = np.repeat(e_parallel[:, np.newaxis], len(sig_sub_blocks_a[~np.isnan(sig_sub_blocks_a)]), axis=1)
     i_sig_a = e_par_sig_a / parameters["z_sig"]
     i_trac_a = e_par_trac_a / parameters["z_trac"]
 
     # "b" second
-    e_par_trac_b = np.full((len(e_parallel), len(trac_sub_blocks_b)), -e_parallel)
-    e_par_sig_b = np.full((len(e_parallel), len(sig_sub_blocks_b[~np.isnan(sig_sub_blocks_b)])), -e_parallel)
+    e_par_trac_b = np.repeat(-e_parallel[:, np.newaxis], len(trac_sub_blocks_b), axis=1)
+    e_par_sig_b = np.repeat(-e_parallel[:, np.newaxis], len(sig_sub_blocks_b[~np.isnan(sig_sub_blocks_b)]), axis=1)
     i_sig_b = e_par_sig_b / parameters["z_sig"]
     i_trac_b = e_par_trac_b / parameters["z_trac"]
 
@@ -731,7 +731,7 @@ def rail_model_two_track_e_parallel(section_name, conditions, e_parallel, axle_p
 #plt.show()
 
 
-#ia, ib = rail_model_two_track_e_parallel(section_name="test", conditions="moderate", e_parallel=np.array([0]), axle_pos_a=np.array([0.99, 1]), axle_pos_b=np.array([2.6]))
+#ia, ib = rail_model_two_track_e_parallel(section_name="test", conditions="moderate", e_parallel=np.array([0, 1]), axle_pos_a=np.array([0.99, 1]), axle_pos_b=np.array([2.6]))
 #fig, ax = plt.subplots(2, 1)
 #ax[0].plot(ia[0], '.')
 #ax[1].plot(ib[0], '.')
