@@ -50,10 +50,21 @@ def find_right_side_thresholds_e_parallel(section_name):
     bins = np.arange(-30, 30.5, 0.1)
     N2, bins2, patches2 = ax2.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
     N3, bins3, patches3 = ax3.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
-    axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 12.5, 2, 0.8), bbox_transform=ax2.transData)
-    N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
-    axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 11.5, 2, 0.8), bbox_transform=ax3.transData)
-    N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
+    if section_name == "west_coast_main_line":
+        axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 12.5, 2, 0.8), bbox_transform=ax2.transData)
+        N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
+        axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 11.5, 2, 0.8), bbox_transform=ax3.transData)
+        N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
+    if section_name == "east_coast_main_line":
+        axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 17.5, 2, 0.8), bbox_transform=ax2.transData)
+        N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
+        axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 20, 2, 0.8), bbox_transform=ax3.transData)
+        N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
+    if section_name == "glasgow_edinburgh_falkirk":
+        axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 2.5, 2, 0.8), bbox_transform=ax2.transData)
+        N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
+        axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 2.5, 2, 0.8), bbox_transform=ax3.transData)
+        N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
 
     fracs2 = N2 / N2.max()
     norm2 = colors.Normalize(fracs2.min(), fracs2.max())
