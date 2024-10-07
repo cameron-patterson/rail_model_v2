@@ -26,7 +26,7 @@ def generate_timetable_currents(section_name, storm):
 
     ia_all = np.empty(len(axle_positions_a_all), dtype=object)
     ib_all = np.empty(len(axle_positions_b_all), dtype=object)
-    for i in range(0, len(axle_positions_a_all)):
+    for i in range(1000, len(axle_positions_a_all)):
         axle_pos_a = axle_positions_a_all[i]
         axle_pos_b = axle_positions_b_all[i]
         ex_blocks = ex_blocks_all[:, i:i+1]
@@ -186,7 +186,7 @@ def save_frames(section, storm):
             ax.axhline(0.055, color="tomato", linestyle="--")
             ax.axhline(0.081, color="limegreen")
             ax.set_ylim(-0.15, 0.5)
-            ax.set_xlim(-1, len(ia_all[0]))
+            ax.set_xlim(-1, len(ia_all[1000]))
             ax.set_xlabel("Track Circuit Block")
             ax.set_ylabel("Current Through Relay (A)")
             ax.grid()
@@ -225,6 +225,6 @@ def make_gif(section, storm):
             writer.append_data(image)
 
 
-#generate_timetable_currents("east_coast_main_line", "may2024")
+#generate_timetable_currents("glasgow_edinburgh_falkirk", "may2024")
 #save_frames("east_coast_main_line", "may2024")
 make_gif("east_coast_main_line", "may2024")

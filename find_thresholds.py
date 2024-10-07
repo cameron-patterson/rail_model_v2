@@ -7,7 +7,88 @@ from matplotlib.ticker import PercentFormatter
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
-def find_right_side_thresholds_e_parallel(section_name):
+def save_right_side_threshold_currents(section_name):
+    e_par = np.arange(-40, 40, 0.1)
+    ia_all, ib_all = rail_model_two_track_e_parallel(section_name=section_name, conditions="moderate", e_parallel=e_par, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+
+    np.savez(f"data\\thresholds\\rs_threshold_currents_{section_name}", threshold_currents_a=ia_all, threshold_currents_b=ib_all)
+
+
+def save_wrong_side_thresholds_currents(section_name):
+    e_par = np.arange(-40, 40, 0.1)
+
+    axle_pos_mid = np.load(f"data\\axle_positions\\block_centre\\{section_name}_axle_positions_two_track_back_axle_block_centre.npz", allow_pickle=True)
+    axle_pos_all_a = axle_pos_mid["axle_pos_a_all"]
+    axle_pos_all_b = axle_pos_mid["axle_pos_b_all"]
+
+    threshold_e_field_currents_all_a = np.empty((len(axle_pos_all_a), len(e_par)))
+    threshold_e_field_currents_all_b = np.empty((len(axle_pos_all_b), len(e_par)))
+    for n_ax in range(0, len(axle_pos_all_a)):
+        print(n_ax)
+        axles_a = axle_pos_all_a[n_ax]
+        axles_b = axle_pos_all_b[n_ax]
+
+        ia_all, ib_all = rail_model_two_track_e_parallel(section_name=section_name, conditions="moderate", e_parallel=e_par, axle_pos_a=axles_a, axle_pos_b=axles_b)
+        threshold_e_field_currents_all_a[n_ax] = ia_all[:, n_ax]
+        threshold_e_field_currents_all_b[n_ax] = ib_all[:, n_ax]
+
+    np.savez(f"data\\thresholds\\ws_threshold_currents_{section_name}", threshold_currents_a=threshold_e_field_currents_all_a, threshold_currents_b=threshold_e_field_currents_all_b)
+
+
+def save_right_side_threshold_e_fields(section_name):
+    e_par = np.arange(-40, 40, 0.1)
+
+    threshold_currents = np.load(f"data\\thresholds\\rs_threshold_currents_{section_name}.npz")
+    threshold_currents_a = threshold_currents["threshold_currents_a"]
+    threshold_currents_b = threshold_currents["threshold_currents_b"]
+
+    plt.plot()
+
+    threshold_e_fields_a = np.empty(len(threshold_currents_a[0, :]))
+    threshold_e_fields_b = np.empty(len(threshold_currents_b[0, :]))
+    for i in range(0, len(threshold_currents_a[0, :])):
+        misoperation_currents_a = threshold_currents_a[:, i][threshold_currents_a[:, i] < 0.055]
+        if len(misoperation_currents_a) > 0:
+            threshold_e_fields_a[i] = e_par[np.where(threshold_currents_a == np.max(misoperation_currents_a))[0]]
+        else:
+            threshold_e_fields_a[i] = np.nan
+        misoperation_currents_b = threshold_currents_b[:, i][threshold_currents_b[:, i] < 0.055]
+        if len(misoperation_currents_b) > 0:
+            threshold_e_fields_b[i] = e_par[np.where(threshold_currents_b == np.max(misoperation_currents_b))[0]]
+        else:
+            threshold_e_fields_b[i] = np.nan
+
+    np.savez(f"data\\thresholds\\rs_threshold_e_fields_{section_name}", threshold_e_fields_a=threshold_e_fields_a, threshold_e_fields_b=threshold_e_fields_b)
+
+
+def plot_right_side_thresholds(section_name):
+    e_par = np.arange(-40, 40, 0.1)
+    threshold_e_fields = np.load(f"data\\thresholds\\rs_threshold_e_fields_{section_name}.npz")
+    threshold_e_fields_a = threshold_e_fields["threshold_e_fields_a"]
+    threshold_e_fields_b = threshold_e_fields["threshold_e_fields_b"]
+
+    threshold_e_fields_a_pos = threshold_e_fields_a[threshold_e_fields_a > 0]
+    n_misoperations = np.empty(len(threshold_e_fields_a[threshold_e_fields_a > 0]))
+    for i in range(0, len(e_par[e_par > 0])):
+        e = e_par[e_par > 0][i]
+        print(e)
+        n_misoperations[i] = len(np.where(threshold_e_fields_a_pos < e)[0])
+
+
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 8))
+    gs = GridSpec(2, 1, figure=fig)
+    ax0 = fig.add_subplot(gs[:1, :])
+    ax1 = fig.add_subplot(gs[1:, :])
+
+    ax0.plot(n_misoperations, '.')
+
+
+    plt.show()
+
+    pass
+
+def plot_right_side_thresholds_e_parallel_histogram(section_name):
     e_par = np.arange(-40, 40, 0.1)
     ia_all, ib_all = rail_model_two_track_e_parallel(section_name=section_name, conditions="moderate", e_parallel=e_par, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
 
@@ -119,8 +200,12 @@ def find_right_side_thresholds_e_parallel(section_name):
     else:
         print("Unrecognised route")
 
-    plt.savefig(f"{section_name}_thresholds.jpg")
+    #plt.savefig(f"{section_name}_thresholds.jpg")
+    plt.show()
 
 
-for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
-    find_right_side_thresholds_e_parallel(sec)
+
+for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+    #save_right_side_threshold_currents(sec)
+    #save_right_side_threshold_e_fields(sec)
+    plot_right_side_thresholds(sec)

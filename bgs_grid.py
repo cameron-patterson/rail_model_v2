@@ -28,8 +28,8 @@ def find_closest_grid(section):
 
 def gen_storm_e_vals(section):
     data = loadmat('data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
-    exs = data['Ex']
-    eys = data['Ey']
+    exs = data['Ex'] * -1
+    eys = data['Ey'] * -1
 
     closest_grids = np.load('data/storm_e_fields/bgs_may2024/' + section + '_closest_grids.npy')
 
@@ -48,7 +48,7 @@ def gen_storm_e_vals(section):
     np.savez(section + '_may2024_e_blocks.npz', ex_blocks=ex_blocks, ey_blocks=ey_blocks)
 
 
-#for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
 #    find_closest_grid(sec)
-#    gen_storm_e_vals(sec)
+    gen_storm_e_vals(sec)
 

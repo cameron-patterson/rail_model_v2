@@ -311,14 +311,13 @@ def rail_model_two_track_e_blocks(section_name, conditions, ex_blocks, ey_blocks
     whole_blocks_start = sig_relay_axle[whole_blocks]
     whole_blocks_end = whole_blocks_start + 1
     split_blocks_start = sig_relay_axle[np.where(~np.isin(sig_relay_axle, node_locs_axle_sig_a) & ~np.isin(sig_relay_axle, whole_blocks_start))[0]]
-    split_blocks_end = split_blocks_start + 1
+    split_blocks_end = np.delete(node_locs_power_sig_a, np.where(np.isin(node_locs_power_sig_a, whole_blocks_end)))
     split_blocks_mid = sig_relay_axle[np.where(np.isin(sig_relay_axle, node_locs_axle_sig_a))[0]]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, whole_blocks_start))[0]]] = -i_sig_a[:, whole_blocks]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, whole_blocks_end))[0]]] = i_sig_a[:, whole_blocks] + parameters["i_power"]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, split_blocks_start))[0]]] = -i_sig_a[:, np.where(np.isin(sig_relay_axle, split_blocks_start))[0]]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, split_blocks_end))[0]]] = i_sig_a[:, split_blocks[np.where(~np.isin(split_blocks,np.where(np.isin(sig_relay_axle, split_blocks_mid))[0] - 1))[0]]] + parameters["i_power"]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, split_blocks_mid))[0]]] = i_sig_a[:, np.where(np.isin(sig_relay_axle, split_blocks_mid))[0] - 1] - i_sig_a[:, np.where(np.isin(sig_relay_axle, split_blocks_mid))[0]]
-
     # "b" second
     # Traction return rail first node
     j_matrix[:, node_locs_trac_b[0]] = i_trac_b[:, 0] - parameters["i_power"]
@@ -348,12 +347,12 @@ def rail_model_two_track_e_blocks(section_name, conditions, ex_blocks, ey_blocks
     whole_blocks_start = sig_power_axle[whole_blocks]
     whole_blocks_end = whole_blocks_start + 1
     split_blocks_start = sig_power_axle[np.where(~np.isin(sig_power_axle, node_locs_axle_sig_b) & ~np.isin(sig_power_axle, whole_blocks_start))[0]]
-    split_blocks_end = split_blocks_start + 1
+    split_blocks_end = np.delete(node_locs_relay_sig_b, np.where(np.isin(node_locs_relay_sig_b, whole_blocks_end)))
     split_blocks_mid = sig_power_axle[np.where(np.isin(sig_power_axle, node_locs_axle_sig_b))[0]]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, whole_blocks_start))[0]]] = i_sig_b[:, whole_blocks] + parameters["i_power"]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, whole_blocks_end))[0]]] = -i_sig_b[:, whole_blocks]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_start))[0]]] = i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_start))[0]] + parameters["i_power"]
-    j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_end))[0]]] = i_sig_b[:, split_blocks[np.where(~np.isin(split_blocks, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1))[0]]]
+    j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_end))[0]]] = -i_sig_b[:, split_blocks[np.where(~np.isin(split_blocks, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1))[0]]]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_mid))[0]]] = -i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1] + i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_mid))[0]]
 
     # Calculate voltage matrix
@@ -651,7 +650,7 @@ def rail_model_two_track_e_parallel(section_name, conditions, e_parallel, axle_p
     whole_blocks_start = sig_relay_axle[whole_blocks]
     whole_blocks_end = whole_blocks_start + 1
     split_blocks_start = sig_relay_axle[np.where(~np.isin(sig_relay_axle, node_locs_axle_sig_a) & ~np.isin(sig_relay_axle, whole_blocks_start))[0]]
-    split_blocks_end = split_blocks_start + 1
+    split_blocks_end = np.delete(node_locs_power_sig_a, np.where(np.isin(node_locs_power_sig_a, whole_blocks_end)))
     split_blocks_mid = sig_relay_axle[np.where(np.isin(sig_relay_axle, node_locs_axle_sig_a))[0]]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, whole_blocks_start))[0]]] = -i_sig_a[:, whole_blocks]
     j_matrix[:, node_locs_sig_a[np.where(np.isin(node_locs_sig_a, whole_blocks_end))[0]]] = i_sig_a[:, whole_blocks] + parameters["i_power"]
@@ -688,12 +687,12 @@ def rail_model_two_track_e_parallel(section_name, conditions, e_parallel, axle_p
     whole_blocks_start = sig_power_axle[whole_blocks]
     whole_blocks_end = whole_blocks_start + 1
     split_blocks_start = sig_power_axle[np.where(~np.isin(sig_power_axle, node_locs_axle_sig_b) & ~np.isin(sig_power_axle, whole_blocks_start))[0]]
-    split_blocks_end = split_blocks_start + 1
+    split_blocks_end = np.delete(node_locs_relay_sig_b, np.where(np.isin(node_locs_relay_sig_b, whole_blocks_end)))
     split_blocks_mid = sig_power_axle[np.where(np.isin(sig_power_axle, node_locs_axle_sig_b))[0]]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, whole_blocks_start))[0]]] = i_sig_b[:, whole_blocks] + parameters["i_power"]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, whole_blocks_end))[0]]] = -i_sig_b[:, whole_blocks]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_start))[0]]] = i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_start))[0]] + parameters["i_power"]
-    j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_end))[0]]] = i_sig_b[:, split_blocks[np.where(~np.isin(split_blocks, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1))[0]]]
+    j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_end))[0]]] = -i_sig_b[:, split_blocks[np.where(~np.isin(split_blocks, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1))[0]]]
     j_matrix[:, node_locs_sig_b[np.where(np.isin(node_locs_sig_b, split_blocks_mid))[0]]] = -i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_mid))[0] - 1] + i_sig_b[:, np.where(np.isin(sig_power_axle, split_blocks_mid))[0]]
 
     # Calculate voltage matrix
@@ -723,16 +722,14 @@ def rail_model_two_track_e_parallel(section_name, conditions, e_parallel, axle_p
     return i_relays_a, i_relays_b
 
 
-
-#ia, ib = rail_model_two_track_e_blocks(section_name="test", conditions="moderate", ex_blocks=np.array([[0, 0], [0, 0], [0, 0]]), ey_blocks=np.array([[0, 0], [0, 0], [0, 0]]), axle_pos_a=np.array([0.99, 1]), axle_pos_b=np.array([2.6]))
+#ia, ib = rail_model_two_track_e_blocks(section_name="test", conditions="moderate", ex_blocks=np.array([[0, 0], [0, 0], [0, 0]]), ey_blocks=np.array([[0, 0], [0, 0], [0, 0]]), axle_pos_a=np.array([2.11, 2.22]), axle_pos_b=np.array([2.11, 2.22]))
 #fig, ax = plt.subplots(2, 1)
 #ax[0].plot(ia[0], '.')
 #ax[1].plot(ib[0], '.')
 #plt.show()
 
-
-#ia, ib = rail_model_two_track_e_parallel(section_name="test", conditions="moderate", e_parallel=np.array([0, 1]), axle_pos_a=np.array([0.99, 1]), axle_pos_b=np.array([2.6]))
-#fig, ax = plt.subplots(2, 1)
-#ax[0].plot(ia[0], '.')
-#ax[1].plot(ib[0], '.')
+#ia, ib = rail_model_two_track_e_parallel(section_name="test", conditions="moderate", e_parallel=np.array([0]), axle_pos_a=np.array([2.11, 2.22]), axle_pos_b=np.array([2.11, 2.22]))
+#fig, ax = plt.subplots(2, 2)
+#ax[0, 0].plot(ia[0], '.')
+#ax[1, 0].plot(ib[0], '.')
 #plt.show()
