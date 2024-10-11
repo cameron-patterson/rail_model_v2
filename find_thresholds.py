@@ -14,10 +14,10 @@ def save_right_side_threshold_currents(section_name):
     np.savez(f"data\\thresholds\\rs_threshold_currents_{section_name}", threshold_currents_a=ia_all, threshold_currents_b=ib_all)
 
 
-def save_wrong_side_thresholds_currents(section_name):
+def save_wrong_side_thresholds_currents(section_name, position):
     e_par = np.arange(-40, 40, 0.1)
 
-    axle_pos_mid = np.load(f"data\\axle_positions\\block_centre\\{section_name}_axle_positions_two_track_back_axle_block_centre.npz", allow_pickle=True)
+    axle_pos_mid = np.load(f"data\\axle_positions\\{position}\\{section_name}_axle_positions_two_track_back_axle_{position}.npz", allow_pickle=True)
     axle_pos_all_a = axle_pos_mid["axle_pos_a_all"]
     axle_pos_all_b = axle_pos_mid["axle_pos_b_all"]
 
@@ -32,7 +32,7 @@ def save_wrong_side_thresholds_currents(section_name):
         threshold_e_field_currents_all_a[n_ax] = ia_all[:, n_ax]
         threshold_e_field_currents_all_b[n_ax] = ib_all[:, n_ax]
 
-    np.savez(f"data\\thresholds\\ws_threshold_currents_{section_name}", threshold_currents_a=threshold_e_field_currents_all_a, threshold_currents_b=threshold_e_field_currents_all_b)
+    np.savez(f"data\\thresholds\\ws_threshold_currents_{section_name}_{position}", threshold_currents_a=threshold_e_field_currents_all_a, threshold_currents_b=threshold_e_field_currents_all_b)
 
 
 def save_right_side_threshold_e_fields(section_name):
@@ -41,8 +41,6 @@ def save_right_side_threshold_e_fields(section_name):
     threshold_currents = np.load(f"data\\thresholds\\rs_threshold_currents_{section_name}.npz")
     threshold_currents_a = threshold_currents["threshold_currents_a"]
     threshold_currents_b = threshold_currents["threshold_currents_b"]
-
-    plt.plot()
 
     threshold_e_fields_a = np.empty(len(threshold_currents_a[0, :]))
     threshold_e_fields_b = np.empty(len(threshold_currents_b[0, :]))
@@ -58,7 +56,34 @@ def save_right_side_threshold_e_fields(section_name):
         else:
             threshold_e_fields_b[i] = np.nan
 
-    np.savez(f"data\\thresholds\\rs_threshold_e_fields_{section_name}", threshold_e_fields_a=threshold_e_fields_a, threshold_e_fields_b=threshold_e_fields_b)
+    #np.savez(f"data\\thresholds\\rs_threshold_e_fields_{section_name}", threshold_e_fields_a=threshold_e_fields_a, threshold_e_fields_b=threshold_e_fields_b)
+    pass
+
+
+def save_wrong_side_threshold_e_fields(section_name, position):
+    e_par = np.arange(-40, 40, 0.1)
+
+    threshold_currents = np.load(f"data\\thresholds\\ws_threshold_currents_{section_name}_{position}.npz")
+    threshold_currents_a = threshold_currents["threshold_currents_a"]
+    threshold_currents_b = threshold_currents["threshold_currents_b"]
+
+    threshold_e_fields_a = np.empty(len(threshold_currents_a[:, 0]))
+    threshold_e_fields_b = np.empty(len(threshold_currents_b[:, 0]))
+
+    for i in range(0, len(threshold_currents_a[:, 0])):
+
+        misoperation_currents_a = threshold_currents_a[i, :][threshold_currents_a[i, :] > 0.081]
+        if len(misoperation_currents_a) > 0:
+            threshold_e_fields_a[i] = e_par[np.where(threshold_currents_a[i, :] == np.min(misoperation_currents_a))[0]]
+        else:
+            threshold_e_fields_a[i] = np.nan
+        misoperation_currents_b = threshold_currents_b[i, :][threshold_currents_b[i, :] > 0.081]
+        if len(misoperation_currents_b) > 0:
+            threshold_e_fields_b[i] = e_par[np.where(threshold_currents_b[i, :] == np.min(misoperation_currents_b))[0]]
+        else:
+            threshold_e_fields_b[i] = np.nan
+
+    np.savez(f"data\\thresholds\\ws_threshold_e_fields_{section_name}_{position}", threshold_e_fields_a=threshold_e_fields_a, threshold_e_fields_b=threshold_e_fields_b)
 
 
 def plot_right_side_thresholds(section_name):
@@ -68,12 +93,33 @@ def plot_right_side_thresholds(section_name):
     threshold_e_fields_b = threshold_e_fields["threshold_e_fields_b"]
 
     threshold_e_fields_a_pos = threshold_e_fields_a[threshold_e_fields_a > 0]
-    n_misoperations = np.empty(len(threshold_e_fields_a[threshold_e_fields_a > 0]))
+    n_misoperations_pos_a = np.empty(len(e_par[e_par > 0]))
     for i in range(0, len(e_par[e_par > 0])):
         e = e_par[e_par > 0][i]
-        print(e)
-        n_misoperations[i] = len(np.where(threshold_e_fields_a_pos < e)[0])
+        n_misoperations_pos_a[i] = len(np.where(threshold_e_fields_a_pos < e)[0])
 
+    threshold_e_fields_a_neg = threshold_e_fields_a[threshold_e_fields_a < 0]
+    n_misoperations_neg_a = np.empty(len(e_par[e_par < 0]))
+    for i in range(0, len(e_par[e_par < 0])):
+        e = e_par[e_par < 0][i]
+        n_misoperations_neg_a[i] = len(np.where(threshold_e_fields_a_neg > e)[0])
+
+    threshold_e_fields_b_pos = threshold_e_fields_b[threshold_e_fields_b > 0]
+    n_misoperations_pos_b = np.empty(len(e_par[e_par > 0]))
+    for i in range(0, len(e_par[e_par > 0])):
+        e = e_par[e_par > 0][i]
+        n_misoperations_pos_b[i] = len(np.where(threshold_e_fields_b_pos < e)[0])
+
+    threshold_e_fields_b_neg = threshold_e_fields_b[threshold_e_fields_b < 0]
+    n_misoperations_neg_b = np.empty(len(e_par[e_par < 0]))
+    for i in range(0, len(e_par[e_par < 0])):
+        e = e_par[e_par < 0][i]
+        n_misoperations_neg_b[i] = len(np.where(threshold_e_fields_b_neg > e)[0])
+
+    first_misoperation_pos_a = np.min(e_par[e_par > 0][np.isin(n_misoperations_pos_a, np.min(n_misoperations_pos_a[n_misoperations_pos_a > 0]))])
+    first_misoperation_neg_a = np.max(e_par[e_par < 0][np.isin(n_misoperations_neg_a, np.min(n_misoperations_neg_a[n_misoperations_neg_a > 0]))])
+    first_misoperation_pos_b = np.min(e_par[e_par > 0][np.isin(n_misoperations_pos_b, np.min(n_misoperations_pos_b[n_misoperations_pos_b > 0]))])
+    first_misoperation_neg_b = np.max(e_par[e_par < 0][np.isin(n_misoperations_neg_b, np.min(n_misoperations_neg_b[n_misoperations_neg_b > 0]))])
 
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(14, 8))
@@ -81,131 +127,144 @@ def plot_right_side_thresholds(section_name):
     ax0 = fig.add_subplot(gs[:1, :])
     ax1 = fig.add_subplot(gs[1:, :])
 
-    ax0.plot(n_misoperations, '.')
+    ax0.plot(e_par[e_par > 0], n_misoperations_pos_a, '.', color="tomato")
+    ax0.plot(e_par[e_par < 0], n_misoperations_neg_a, '.', color="steelblue")
+    ax0.axvline(first_misoperation_pos_a, linestyle="--", color="tomato")
+    ax0.axvline(first_misoperation_neg_a, linestyle="--", color="steelblue")
+    ax0.text(first_misoperation_pos_a + 0.1, len(threshold_e_fields_a_pos)*0.75, str(np.round(first_misoperation_pos_a, 1)))
+    ax0.text(first_misoperation_neg_a + 0.1, len(threshold_e_fields_a_pos)*0.75, str(np.round(first_misoperation_neg_a, 1)))
 
+    ax1.plot(e_par[e_par > 0], n_misoperations_pos_b, '.', color="tomato")
+    ax1.plot(e_par[e_par < 0], n_misoperations_neg_b, '.', color="steelblue")
+    ax1.axvline(first_misoperation_pos_b, linestyle="--", color="tomato")
+    ax1.axvline(first_misoperation_neg_b, linestyle="--", color="steelblue")
+    ax1.text(first_misoperation_pos_b + 0.1, len(threshold_e_fields_b_neg)*0.75, str(np.round(first_misoperation_pos_b, 1)))
+    ax1.text(first_misoperation_neg_b + 0.1, len(threshold_e_fields_b_neg)*0.75, str(np.round(first_misoperation_neg_b, 1)))
 
-    plt.show()
+    def common_features(ax):
+        ax.set_xlim(np.min(e_par), np.max(e_par))
+        ax.grid()
+        ax.set_xlabel("Electric Field Strength (V/km)")
+        ax.set_ylabel("Number of Right Side Failures")
+        if section_name == "glasgow_edinburgh_falkirk":
+            fig.suptitle("Glasgow to Edinburgh via Falkirk High")
+        elif section_name == "west_coast_main_line":
+            fig.suptitle("West Coast Main Line")
+        elif section_name == "east_coast_main_line":
+            fig.suptitle("East Coast Main Line")
+        else:
+            print("Route not configured")
+
+    common_features(ax0)
+    common_features(ax1)
+
+    plt.savefig(f"{section_name}_rs_thresholds.jpg")
 
     pass
 
-def plot_right_side_thresholds_e_parallel_histogram(section_name):
+
+def plot_wrong_side_thresholds(section_name, position):
     e_par = np.arange(-40, 40, 0.1)
-    ia_all, ib_all = rail_model_two_track_e_parallel(section_name=section_name, conditions="moderate", e_parallel=e_par, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+    threshold_e_fields = np.load(f"data\\thresholds\\ws_threshold_e_fields_{section_name}_{position}.npz")
+    threshold_e_fields_a = threshold_e_fields["threshold_e_fields_a"]
+    threshold_e_fields_b = threshold_e_fields["threshold_e_fields_b"]
 
-    thresholds_a = np.empty(len(ia_all[0, :]))
-    thresholds_b = np.empty(len(ib_all[0, :]))
-    for i in range(0, len(ia_all[0, :])):
-        ia = ia_all[:, i]
-        ib = ib_all[:, i]
-        threshold = 0.055
-        threshold_difference_a = ia - threshold
-        threshold_difference_b = ib - threshold
-        negative_indices_a = np.where(threshold_difference_a < 0)[0]
-        negative_indices_b = np.where(threshold_difference_b < 0)[0]
+    threshold_e_fields_a_pos = threshold_e_fields_a[threshold_e_fields_a > 0]
+    n_misoperations_pos_a = np.empty(len(e_par[e_par > 0]))
+    for i in range(0, len(e_par[e_par > 0])):
+        e = e_par[e_par > 0][i]
+        n_misoperations_pos_a[i] = len(np.where(threshold_e_fields_a_pos < e)[0])
 
-        if negative_indices_a.size > 0:
-            index_of_closest_to_zero_a = negative_indices_a[np.argmax(threshold_difference_a[negative_indices_a])]
-            thresholds_a[i] = e_par[index_of_closest_to_zero_a]
-        else:
-            thresholds_a[i] = np.nan
-            print(f"No negative numbers found in array {i}.")
+    threshold_e_fields_a_neg = threshold_e_fields_a[threshold_e_fields_a < 0]
+    n_misoperations_neg_a = np.empty(len(e_par[e_par < 0]))
+    for i in range(0, len(e_par[e_par < 0])):
+        e = e_par[e_par < 0][i]
+        n_misoperations_neg_a[i] = len(np.where(threshold_e_fields_a_neg > e)[0])
 
-        if negative_indices_b.size > 0:
-            index_of_closest_to_zero_b = negative_indices_b[np.argmax(threshold_difference_b[negative_indices_b])]
-            thresholds_b[i] = e_par[index_of_closest_to_zero_b]
-        else:
-            thresholds_b[i] = np.nan
-            print(f"No negative numbers found in array {i}.")
+    threshold_e_fields_b_pos = threshold_e_fields_b[threshold_e_fields_b > 0]
+    n_misoperations_pos_b = np.empty(len(e_par[e_par > 0]))
+    for i in range(0, len(e_par[e_par > 0])):
+        e = e_par[e_par > 0][i]
+        n_misoperations_pos_b[i] = len(np.where(threshold_e_fields_b_pos < e)[0])
+
+    threshold_e_fields_b_neg = threshold_e_fields_b[threshold_e_fields_b < 0]
+    n_misoperations_neg_b = np.empty(len(e_par[e_par < 0]))
+    for i in range(0, len(e_par[e_par < 0])):
+        e = e_par[e_par < 0][i]
+        n_misoperations_neg_b[i] = len(np.where(threshold_e_fields_b_neg > e)[0])
 
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(14, 8))
-    gs = GridSpec(2, 2, figure=fig)
-    ax0 = fig.add_subplot(gs[:1, :1])
-    ax1 = fig.add_subplot(gs[1:, :1])
-    ax2 = fig.add_subplot(gs[:1, 1:])
-    ax3 = fig.add_subplot(gs[1:, 1:])
+    gs = GridSpec(2, 1, figure=fig)
+    ax0 = fig.add_subplot(gs[:1, :])
+    ax1 = fig.add_subplot(gs[1:, :])
 
-    ax0.plot(thresholds_a, '.', ms=3)
-    ax1.plot(thresholds_b, '.', ms=3)
+    ax0.plot(e_par[e_par > 0], n_misoperations_pos_a, '.', color="tomato")
+    ax0.plot(e_par[e_par < 0], n_misoperations_neg_a, '.', color="steelblue")
 
-    bins = np.arange(-30, 30.5, 0.1)
-    N2, bins2, patches2 = ax2.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
-    N3, bins3, patches3 = ax3.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
-    if section_name == "west_coast_main_line":
-        axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 12.5, 2, 0.8), bbox_transform=ax2.transData)
-        N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
-        axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 11.5, 2, 0.8), bbox_transform=ax3.transData)
-        N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
-    if section_name == "east_coast_main_line":
-        axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 17.5, 2, 0.8), bbox_transform=ax2.transData)
-        N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
-        axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 20, 2, 0.8), bbox_transform=ax3.transData)
-        N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
-    if section_name == "glasgow_edinburgh_falkirk":
-        axins1 = inset_axes(ax2, width=2, height=0.8, loc='lower left', bbox_to_anchor=(2, 2.5, 2, 0.8), bbox_transform=ax2.transData)
-        N4, bins4, patches4 = axins1.hist(thresholds_a, bins, histtype="bar", width=0.15, zorder=2)
-        axins2 = inset_axes(ax3, width=2, height=0.8, loc='lower left', bbox_to_anchor=(-26, 2.5, 2, 0.8), bbox_transform=ax3.transData)
-        N5, bins5, patches5 = axins2.hist(thresholds_b, bins, histtype="bar", width=0.15, zorder=2)
+    ax1.plot(e_par[e_par > 0], n_misoperations_pos_b, '.', color="tomato")
+    ax1.plot(e_par[e_par < 0], n_misoperations_neg_b, '.', color="steelblue")
 
-    fracs2 = N2 / N2.max()
-    norm2 = colors.Normalize(fracs2.min(), fracs2.max())
-    for thisfrac, thispatch in zip(fracs2, patches2):
-        color2 = plt.cm.viridis(norm2(thisfrac))
-        thispatch.set_facecolor(color2)
-    fracs3 = N3 / N3.max()
-    norm3 = colors.Normalize(fracs3.min(), fracs3.max())
-    for thisfrac, thispatch in zip(fracs3, patches3):
-        color3 = plt.cm.viridis(norm3(thisfrac))
-        thispatch.set_facecolor(color3)
-    fracs4 = N4 / N4.max()
-    norm4 = colors.Normalize(fracs4.min(), fracs4.max())
-    for thisfrac, thispatch in zip(fracs4, patches4):
-        color4 = plt.cm.viridis(norm4(thisfrac))
-        thispatch.set_facecolor(color4)
-    fracs5 = N5 / N5.max()
-    norm5 = colors.Normalize(fracs5.min(), fracs5.max())
-    for thisfrac, thispatch in zip(fracs5, patches5):
-        color5 = plt.cm.viridis(norm5(thisfrac))
-        thispatch.set_facecolor(color5)
-
-    ax2.grid(zorder=1)
-    ax3.grid(zorder=1)
-    ax2.set_xlim(-30, 30)
-    ax3.set_xlim(-30, 30)
-    axins1.set_xlim(-8, -2)
-    axins2.set_xlim(2, 8)
-    axins1.set_xticks([-2, -3, -4, -5, -6, -7, -8])
-    axins2.set_xticks([2, 3, 4, 5, 6, 7, 8])
-    ax2.set_xlabel("Electric Field (V/km)")
-    ax3.set_xlabel("Electric Field (V/km)")
-    ax2.set_ylabel("Number of Right Side Failures")
-    ax3.set_ylabel("Number of Right Side Failures")
-
-    def add_common_elements(ax):
-        ax.grid()
-        ax.set_xlim(-1, len(thresholds_a))
-        ax.set_ylim(np.min(e_par) + 0.1, np.max(e_par) + 0.1)
-        ax.set_xlabel("Track Circuit Block")
-        ax.set_ylabel("Misoperation Threshold (V/km)")
-
-    add_common_elements(ax0)
-    add_common_elements(ax1)
-
-    if section_name == "west_coast_main_line":
-        fig.suptitle("West Coast Main Line")
-    elif section_name == "east_coast_main_line":
-        fig.suptitle("East Coast Main Line")
-    elif section_name == "glasgow_edinburgh_falkirk":
-        fig.suptitle("Glasgow to Edinburgh via Falkirk High")
+    if np.max(n_misoperations_pos_a) != 0:
+        first_misoperation_pos_a = np.min(e_par[e_par > 0][np.isin(n_misoperations_pos_a, np.min(n_misoperations_pos_a[n_misoperations_pos_a > 0]))])
+        ax0.axvline(first_misoperation_pos_a, linestyle="--", color="tomato")
+        ax0.text(first_misoperation_pos_a + 0.1, len(threshold_e_fields_a_neg) * 0.75, str(np.round(first_misoperation_pos_a, 1)))
     else:
-        print("Unrecognised route")
+        pass
+    if np.max(n_misoperations_neg_a) != 0:
+        first_misoperation_neg_a = np.max(e_par[e_par < 0][np.isin(n_misoperations_neg_a, np.min(n_misoperations_neg_a[n_misoperations_neg_a > 0]))])
+        ax0.axvline(first_misoperation_neg_a, linestyle="--", color="steelblue")
+        ax0.text(first_misoperation_neg_a + 0.1, len(threshold_e_fields_a_neg) * 0.75, str(np.round(first_misoperation_neg_a, 1)))
+    else:
+        pass
+    if np.max(n_misoperations_pos_b) != 0:
+        first_misoperation_pos_b = np.min(e_par[e_par > 0][np.isin(n_misoperations_pos_b, np.min(n_misoperations_pos_b[n_misoperations_pos_b > 0]))])
+        ax1.axvline(first_misoperation_pos_b, linestyle="--", color="tomato")
+        ax1.text(first_misoperation_pos_b + 0.1, len(threshold_e_fields_b_pos) * 0.75, str(np.round(first_misoperation_pos_b, 1)))
+    else:
+        pass
+    if np.max(n_misoperations_neg_b) != 0:
+        first_misoperation_neg_b = np.max(e_par[e_par < 0][np.isin(n_misoperations_neg_b, np.min(n_misoperations_neg_b[n_misoperations_neg_b > 0]))])
+        ax1.axvline(first_misoperation_neg_b, linestyle="--", color="steelblue")
+        ax1.text(first_misoperation_neg_b + 0.1, len(threshold_e_fields_b_pos) * 0.75, str(np.round(first_misoperation_neg_b, 1)))
+    else:
+        pass
 
-    #plt.savefig(f"{section_name}_thresholds.jpg")
-    plt.show()
+    def common_features(ax):
+        ax.set_xlim(np.min(e_par), np.max(e_par))
+        ax.grid()
+        ax.set_xlabel("Electric Field Strength (V/km)")
+        ax.set_ylabel("Number of Wrong Side Failures")
+        if position == "at_end":
+            if section_name == "glasgow_edinburgh_falkirk":
+                fig.suptitle("Glasgow to Edinburgh via Falkirk High: Trains at Block End")
+            elif section_name == "west_coast_main_line":
+                fig.suptitle("West Coast Main Line: Trains at Block End")
+            elif section_name == "east_coast_main_line":
+                fig.suptitle("East Coast Main Line: Trains at Block End")
+            else:
+                print("Route not configured")
+        elif position == "block_centre":
+            if section_name == "glasgow_edinburgh_falkirk":
+                fig.suptitle("Glasgow to Edinburgh via Falkirk High: Trains at Block Centre")
+            elif section_name == "west_coast_main_line":
+                fig.suptitle("West Coast Main Line: Trains at Block Centre")
+            elif section_name == "east_coast_main_line":
+                fig.suptitle("East Coast Main Line: Trains at Block Centre")
+            else:
+                print("Route not configured")
+        else:
+            print("Axle position not configured")
+
+    common_features(ax0)
+    common_features(ax1)
+
+    plt.savefig(f"ws_thresholds_{section_name}_{position}.jpg")
+
+    pass
 
 
-
-for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
-    #save_right_side_threshold_currents(sec)
-    #save_right_side_threshold_e_fields(sec)
-    plot_right_side_thresholds(sec)
+for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+    #save_wrong_side_thresholds_currents(sec, "at_end")
+    #save_wrong_side_threshold_e_fields(sec, "at_end")
+    plot_wrong_side_thresholds(sec, "block_centre")

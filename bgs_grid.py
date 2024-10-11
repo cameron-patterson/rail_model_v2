@@ -26,10 +26,14 @@ def find_closest_grid(section):
     np.save(section+'_closest_grids.npy', closest_grids)
 
 
-def gen_storm_e_vals(section):
-    data = loadmat('data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
-    exs = data['Ex'] * -1
-    eys = data['Ey'] * -1
+def gen_storm_e_vals(section, storm):
+    data = loadmat(f'data/storm_e_fields/bgs_{storm}/{storm}_efields_timestamp_coordinates.mat')
+    if storm == 'may2024':
+        exs = data['Ex'] * -1
+        eys = data['Ey'] * -1
+    else:
+        exs = data['Ex']
+        eys = data['Ey']
 
     closest_grids = np.load('data/storm_e_fields/bgs_may2024/' + section + '_closest_grids.npy')
 
