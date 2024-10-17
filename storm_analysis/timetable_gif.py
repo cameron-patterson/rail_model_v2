@@ -47,11 +47,11 @@ def save_frames(section, storm):
     blocks_sum = np.cumsum(blocks)
     blocks_sum = np.insert(blocks_sum, 0, 0)
 
-    lola = loadmat('data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
+    lola = loadmat('../data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
     lon_grid = lola['longic']
     lat_grid = lola['latgic']
 
-    es = loadmat('data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
+    es = loadmat('../data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
     exs = es['Ex']
     eys = es['Ey']
 
@@ -72,7 +72,7 @@ def save_frames(section, storm):
     lon_points = lon_lats['lons']
     lat_points = lon_lats['lats']
 
-    coast = np.loadtxt("data/storm_e_fields/coastline.txt")
+    coast = np.loadtxt("../data/storm_e_fields/coastline.txt")
 
     # Load the sym-h Excel file
     df = pd.read_excel("data/sym_h/sym_h_may2024.xlsx")

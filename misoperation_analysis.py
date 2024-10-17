@@ -728,7 +728,7 @@ def rail_model_two_track_e_parallel(section_name, conditions, e_parallel, axle_p
 #ax[1].plot(ib[0], '.')
 #plt.show()
 
-#ia, ib = rail_model_two_track_e_parallel(section_name="test", conditions="moderate", e_parallel=np.array([0]), axle_pos_a=np.array([2.11, 2.22]), axle_pos_b=np.array([2.11, 2.22]))
+#ia, ib = rail_model_two_track_e_parallel(section_name="glasgow_edinburgh_falkirk", conditions="moderate", e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
 #fig, ax = plt.subplots(2, 2)
 #ax[0, 0].plot(ia[0], '.')
 #ax[1, 0].plot(ib[0], '.')

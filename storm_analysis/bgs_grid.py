@@ -7,7 +7,7 @@ def find_closest_grid(section):
     lon_points = lon_lats['lons']
     lat_points = lon_lats['lats']
 
-    data = loadmat('data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
+    data = loadmat('../data/storm_e_fields/bgs_may2024/May2024_efields_timestamp_coordinates.mat')
     lon_grid = data['longic']
     lat_grid = data['latgic']
 
