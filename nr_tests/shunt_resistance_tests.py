@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-# Track circuits using 20 ohm relays to BR 939A, are to be a maximum of 1000m in length.
-# Track circuits using 9 ohm relays to BR 966 F2, are to be a maximum of 680m in length.
-# Track circuits using any other type of track relay, are to be a maximum of 600m in length.
-def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a, axle_pos_b):
+
+def rail_model_shunt_test(r_shunt, conditions, e_parallel, axle_pos_a, axle_pos_b):
+    y_axle = 1/r_shunt
+
     # Create dictionary of network parameters
     parameters = {"z_sig": 0.0289,  # Signalling rail series impedance (ohms/km)
                   "z_trac": 0.0289,  # Traction return rail series impedance (ohms/km)
@@ -16,15 +16,14 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
                   "y_sig_wet": 0.4,  # Signalling rail parallel admittance for moderate conditions (siemens/km)
                   "y_trac_wet": 2,  # Traction return rail parallel admittance for moderate conditions (siemens/km)
                   "r_cb": 1e-3,  # Cross bond resistance (ohms)
-                  "r_axle": 251e-4,  # Axle resistance (ohms)
-                  "y_cb": 1 / 1e-3,  # Cross bond admittance (siemens)
-                  "y_axle": 1 / 251e-4}  # Axle admittance (siemens)
+                  "y_cb": 1 / 1e-3}  # Cross bond admittance (siemens)
+
     tc_parameter_dicts = {
         "br867_br939a": {"v_power": 10, "r_power": 7.2, "r_relay": 20, "i_power": 10 / 7.2, "y_power": 1 / 7.2, "y_relay": 1 / 20},
         "br867_br966f2": {"v_power": 10, "r_power": 7.2, "r_relay": 9, "i_power": 10 / 7.2, "y_power": 1 / 7.2, "y_relay": 1 / 9},
         "br867_br966f9": {"v_power": 10, "r_power": 7.2, "r_relay": 60, "i_power": 10 / 7.2, "y_power": 1 / 7.2, "y_relay": 1 / 60}
     }
-    tc_parameters = tc_parameter_dicts.get(tc_type)
+    tc_parameters = tc_parameter_dicts.get("br867_br939a")
 
     if tc_parameters is None:
         raise ValueError(f"Unknown type: {type}")
@@ -37,8 +36,7 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
 
     # Load in the lengths and bearings of the track circuit blocks
     # Note: zero degrees is directly northwards, with positive values increasing clockwise
-    n_blocks = int(np.round(100/block_length))
-    blocks = np.full(n_blocks, block_length)
+    blocks = np.full(100, 1.001)
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
     # Add cross bonds and axles which split the blocks into sub blocks
@@ -123,7 +121,7 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
     # Axles
     locs_axle_trac_a = np.where(np.isin(node_locs_trac_a, node_locs_axle_trac_a))[0]
     yg[node_locs_axle_trac_a] = (0.5 * yg_trac_a[locs_axle_trac_a - 1]) + (0.5 * yg_trac_a[locs_axle_trac_a])
-    y_sum[node_locs_axle_trac_a] = yg[node_locs_axle_trac_a] + parameters["y_axle"] + ye_trac_a[locs_axle_trac_a - 1] + ye_trac_a[locs_axle_trac_a]
+    y_sum[node_locs_axle_trac_a] = yg[node_locs_axle_trac_a] + y_axle + ye_trac_a[locs_axle_trac_a - 1] + ye_trac_a[locs_axle_trac_a]
     # Cross bonds
     locs_cb_a = np.where(np.isin(node_locs_trac_a, node_locs_cb_a))[0]
     yg[node_locs_cb_a] = (0.5 * yg_trac_a[locs_cb_a - 1]) + (0.5 * yg_trac_a[locs_cb_a])
@@ -153,7 +151,7 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
     # Axle nodes
     axle_locs = np.where(np.isin(node_locs_sig_a, node_locs_axle_sig_a))[0]
     yg[node_locs_axle_sig_a] = (0.5 * yg_sig_a[axle_locs - 1]) + (0.5 * yg_sig_a[axle_locs])
-    y_sum[node_locs_axle_sig_a] = yg[node_locs_axle_sig_a] + parameters["y_axle"] + ye_sig_a[axle_locs - 1] + ye_sig_a[axle_locs]
+    y_sum[node_locs_axle_sig_a] = yg[node_locs_axle_sig_a] + y_axle + ye_sig_a[axle_locs - 1] + ye_sig_a[axle_locs]
     # Direction "b" second
     # Traction return rail
     # First node
@@ -165,7 +163,7 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
     # Axles
     locs_axle_trac_b = np.where(np.isin(node_locs_trac_b, node_locs_axle_trac_b))[0]
     yg[node_locs_axle_trac_b] = (0.5 * yg_trac_b[locs_axle_trac_b - 1]) + (0.5 * yg_trac_b[locs_axle_trac_b])
-    y_sum[node_locs_axle_trac_b] = yg[node_locs_axle_trac_b] + parameters["y_axle"] + ye_trac_b[locs_axle_trac_b - 1] + ye_trac_b[locs_axle_trac_b]
+    y_sum[node_locs_axle_trac_b] = yg[node_locs_axle_trac_b] + y_axle + ye_trac_b[locs_axle_trac_b - 1] + ye_trac_b[locs_axle_trac_b]
     # Cross bonds
     locs_cb_b = np.where(np.isin(node_locs_trac_b, node_locs_cb_b))[0]
     yg[node_locs_cb_b] = (0.5 * yg_trac_b[locs_cb_b - 1]) + (0.5 * yg_trac_b[locs_cb_b])
@@ -195,7 +193,7 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
     # Axle nodes
     axle_locs = np.where(np.isin(node_locs_sig_b, node_locs_axle_sig_b))[0]
     yg[node_locs_axle_sig_b] = (0.5 * yg_sig_b[axle_locs - 1]) + (0.5 * yg_sig_b[axle_locs])
-    y_sum[node_locs_axle_sig_b] = yg[node_locs_axle_sig_b] + parameters["y_axle"] + ye_sig_b[axle_locs - 1] + ye_sig_b[axle_locs]
+    y_sum[node_locs_axle_sig_b] = yg[node_locs_axle_sig_b] + y_axle + ye_sig_b[axle_locs - 1] + ye_sig_b[axle_locs]
 
     # Build admittance matrix
     y_matrix = np.zeros((n_nodes, n_nodes))
@@ -224,10 +222,10 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
     y_matrix[node_locs_cb_a, node_locs_cb_b] = -parameters["y_cb"]
     y_matrix[node_locs_cb_b, node_locs_cb_a] = -parameters["y_cb"]
     # Axle admittances
-    y_matrix[node_locs_axle_trac_a, node_locs_axle_sig_a] = -parameters["y_axle"]
-    y_matrix[node_locs_axle_sig_a, node_locs_axle_trac_a] = -parameters["y_axle"]
-    y_matrix[node_locs_axle_trac_b, node_locs_axle_sig_b] = -parameters["y_axle"]
-    y_matrix[node_locs_axle_sig_b, node_locs_axle_trac_b] = -parameters["y_axle"]
+    y_matrix[node_locs_axle_trac_a, node_locs_axle_sig_a] = -y_axle
+    y_matrix[node_locs_axle_sig_a, node_locs_axle_trac_a] = -y_axle
+    y_matrix[node_locs_axle_trac_b, node_locs_axle_sig_b] = -y_axle
+    y_matrix[node_locs_axle_sig_b, node_locs_axle_trac_b] = -y_axle
 
     y_matrix[np.isnan(y_matrix)] = 0
 
@@ -348,82 +346,30 @@ def rail_model_tc_type(tc_type, block_length, conditions, e_parallel, axle_pos_a
     return i_relays_a, i_relays_b
 
 
-def save_lengths_v_currents(tc_type):
-    bl_range = np.arange(0.100001, 2.000001, 0.01)
-    e_range = np.arange(-40, 40.1, 0.1)
+r_shunts = np.linspace(2, 251e-4, 100)
 
-    lengths_v_currents = np.empty((len(bl_range), len(e_range)))
-    for i in range(0, len(bl_range)):
-        bl = bl_range[i]
-        print(f"{np.round(i/len(bl_range) * 100, 2)}%")
-        ia, ib = rail_model_tc_type(tc_type=tc_type, block_length=bl, conditions="moderate", e_parallel=e_range, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-        n_halfway = int(np.round(100 / (bl*2)))
-        lengths_v_currents[i] = ia[:, n_halfway]
-    np.save(f"data/tc_type_lengths_v_currents/lengths_v_currents_{tc_type}", lengths_v_currents)
+currents = np.empty(len(r_shunts))
+for i in range(0, len(r_shunts)):
+    r_shunt = r_shunts[i]
+    ia, ib = rail_model_shunt_test(r_shunt=r_shunt, conditions="moderate", e_parallel=np.array([0]), axle_pos_a=np.array([51.05]), axle_pos_b=np.array([]))
+    currents[i] = ia[0, 50]
+    print(i)
 
+plt.rcParams['font.size'] = '15'
+fig = plt.figure(figsize=(12, 8))
 
-def save_lengths_v_currents_thresholds(tc_type):
-    bl_range = np.arange(0.100001, 2.000001, 0.01)
-    e_range = np.arange(-40, 40.1, 0.1)
+gs = GridSpec(1, 1)
+ax0 = fig.add_subplot(gs[:, :])
 
-    if tc_type.endswith("br939a"):
-        drop_out = 0.055
-        pick_up = 0.081
-    elif tc_type.endswith("br966f2"):
-        drop_out = 0.081
-        pick_up = 0.120
-    elif tc_type.endswith("br966f9"):
-        drop_out = 0.032
-        pick_up = 0.047
-    else:
-        raise ValueError(f"Unknown type: {tc_type}")
+ax0.plot(r_shunts, currents, color="royalblue")
 
-    lengths_v_currents = np.load(f"data/tc_type_lengths_v_currents/lengths_v_currents_{tc_type}.npy")
-    thresholds = np.empty(len(lengths_v_currents[:, 0]))
-    for i in range(0, len(lengths_v_currents[:, 0])):
-        currents = lengths_v_currents[i, :]
-        misoperation_currents = currents[currents < drop_out]
-        if len(misoperation_currents) > 0:
-            threshold_current = np.max(misoperation_currents)
-            tc_loc = np.where(currents == threshold_current)[0]
-            threshold_e_field = e_range[tc_loc]
-            thresholds[i] = threshold_e_field
-        else:
-            thresholds[i] = np.nan
+ax0.axhline(0.055, linestyle="--", color="tomato")
+ax0.axhline(0.081, linestyle="-", color="green")
 
-    np.save(f"data/tc_type_lengths_v_currents/lengths_v_currents_thresholds_{tc_type}", thresholds)
-
-
-def plot_lengths_v_currents_thresholds():
-    bl_range = np.arange(0.100001, 2.000001, 0.01)
-    e_range = np.arange(-40, 40.1, 0.1)
-
-    thresholds_br939a = np.load("../data/tc_type_lengths_v_currents/lengths_v_currents_thresholds_br867_br939a.npy")
-    thresholds_br966f2 = np.load("../data/tc_type_lengths_v_currents/lengths_v_currents_thresholds_br867_br966f2.npy")
-    thresholds_br966f9 = np.load("../data/tc_type_lengths_v_currents/lengths_v_currents_thresholds_br867_br966f9.npy")
-
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(12, 8))
-
-    gs = GridSpec(1, 1)
-    ax0 = fig.add_subplot(gs[:, :])
-
-    ax0.plot(bl_range, thresholds_br939a, label="BR867 - BR939A", color="royalblue")
-    ax0.plot(bl_range, thresholds_br966f2, label="BR867 - BR66 F2", color="tomato")
-    ax0.plot(bl_range, thresholds_br966f9, label="BR867 - BR966 F9", color="orange")
-    ax0.axvline(1, linestyle="--", color="royalblue")
-    ax0.axvline(0.68, linestyle="--", color="tomato")
-    ax0.axvline(0.35, linestyle="--", color="orange")
-    ax0.set_xlim(0, 2)
-    ax0.set_ylim(0, 40)
-    ax0.grid(color="grey", alpha=0.25)
-    ax0.legend()
-    ax0.set_ylabel("Electric Field Threshold for Right Side Failure (V/km)")
-    ax0.set_xlabel("Length of Track Circuit Block (km)")
-    plt.show()
-
-
-#for type in ["br867_br939a", "br867_br966f2", "br867_br966f9"]:
-#    save_lengths_v_currents_thresholds(type)
-
-plot_lengths_v_currents_thresholds()
+ax0.set_xlim(0, 2)
+#ax0.set_ylim(0, 40)
+ax0.grid(color="grey", alpha=0.25)
+#ax0.legend()
+ax0.set_ylabel("Current through the relay (A)")
+ax0.set_xlabel("Shunt resistance (ohm)")
+plt.savefig("shunt_resistance_test.pdf")
