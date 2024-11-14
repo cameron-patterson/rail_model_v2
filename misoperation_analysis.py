@@ -31,7 +31,7 @@ def rail_model_two_track_e_blocks(section_name, conditions, ex_blocks, ey_blocks
 
     # Load in the lengths and bearings of the track circuit blocks
     # Note: zero degrees is directly northwards, with positive values increasing clockwise
-    data = np.load("data/rail_data/" + section_name + "/" + section_name + "_distances_bearings.npz")
+    data = np.load("../data/rail_data/" + section_name + "/" + section_name + "_distances_bearings.npz")
     blocks = data["distances"]
     bearings = data["bearings"]
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
