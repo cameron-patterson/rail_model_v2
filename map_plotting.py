@@ -1,7 +1,29 @@
 import numpy as np
-from scipy.io import loadmat
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+import geopandas as gpd
+from shapely.geometry import LineString
+
+
+def gen_shape_file(section):
+    lon_lats = np.load(f"data/rail_data/{section}/{section}_sub_block_lons_lats.npz")
+    lon_points = lon_lats['lons']
+    lat_points = lon_lats['lats']
+
+    # Step 1: Prepare your coordinates (longitude, latitude)
+    coordinates = np.array(list(zip(lon_points, lat_points)))
+
+    # Step 2: Create a LineString from the coordinates
+    line = LineString(coordinates)
+
+    # Step 3: Create a GeoDataFrame to store the LineString
+    gdf = gpd.GeoDataFrame(index=[0], crs="EPSG:4326", geometry=[line])
+
+    # Step 4: Save the GeoDataFrame as a shapefile
+    output_path = f"{section}_line_shapefile.shp"
+    gdf.to_file(output_path)
+
+    print(f"Shapefile saved to {output_path}")
 
 
 def plot_map():
@@ -92,5 +114,7 @@ def plot_route_map(route_name):
     plt.show()
 
 
-plot_map()
+#plot_map()
 #plot_route_map("west_coast_main_line")
+for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+    gen_shape_file(sec)
