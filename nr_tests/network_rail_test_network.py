@@ -264,7 +264,7 @@ def dcmod14a_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -492,7 +492,7 @@ def dcmod14a_no_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -757,7 +757,7 @@ def dcmod16a_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -985,7 +985,7 @@ def dcmod16a_no_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -1199,7 +1199,7 @@ def dcmod18a_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -1377,7 +1377,7 @@ def dcmod18a_no_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -1591,7 +1591,7 @@ def dcmod20a_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
@@ -1769,15 +1769,15 @@ def dcmod20a_no_trains(r_power, r_relay, v_power, e_par):
     v_matrix = np.matmul(y_matrix_inv, j_matrix.T)
 
     v_relay = v_matrix[98] - v_matrix[45]
-    i_relay = v_relay / 9
+    i_relay = v_relay / r_relay
 
     return i_relay
 
 
 def plot_br939():
     es = np.arange(-10, 10.1, 0.1)
-    drop_out = 0.05
-    pick_up = 0.073
+    drop_out = 0.055
+    pick_up = 0.081
 
     i_14a_t = np.empty(len(es))
     i_14a_nt = np.empty(len(es))
@@ -1852,8 +1852,8 @@ def plot_br939():
 
 def plot_br966_f2():
     es = np.arange(-10, 10.1, 0.1)
-    drop_out = 0.073
-    pick_up = 0.108
+    drop_out = 0.081
+    pick_up = 0.12
 
     i_14a_t = np.empty(len(es))
     i_14a_nt = np.empty(len(es))
@@ -2002,3 +2002,6 @@ def plot_br966_f9():
     plt.show()
 
 
+plot_br939()
+plot_br966_f2()
+plot_br966_f9()
