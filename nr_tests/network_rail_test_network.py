@@ -4,6 +4,7 @@ import pandas as pd
 from matplotlib.gridspec import GridSpec
 
 
+# Return Conductor
 # DCMOD14a: double track railway, jointed rail, booster sections with return conductor.
 def dcmod14a_trains(r_power, r_relay, v_power, e_par):
     # Set parameters
@@ -990,6 +991,7 @@ def dcmod16a_no_trains(r_power, r_relay, v_power, e_par):
     return i_relay
 
 
+# Rail Return
 # DCMOD18a: double track railway, jointed rail with rail return.
 def dcmod18a_trains(r_power, r_relay, v_power, e_par):
     # Set parameters
@@ -1009,7 +1011,7 @@ def dcmod18a_trains(r_power, r_relay, v_power, e_par):
 
     # Calculate the admittance of the rails based on the type
     # 0.25 ohm/km for jointed, 0.035 ohm/km for CWR
-    ye_long = ((780/1000) * r_rail)
+    ye_long = ((540/1000) * r_rail)
     ye_short = ((60/1000) * r_rail)
 
     # Define parallel admittances
@@ -1606,7 +1608,6 @@ def dcmod20a_no_trains(r_power, r_relay, v_power, e_par):
     r_sig = 0.015  # For each 60m stretch
     y_100k = 1 / 1e5
     y_200k = 1 / 2e5
-    y_1_ohm = 1 / 1
 
     # Calculate the admittance of the rails based on the type
     # 0.25 ohm/km for jointed, 0.035 ohm/km for CWR
@@ -2002,6 +2003,6 @@ def plot_br966_f9():
     plt.show()
 
 
-plot_br939()
+#plot_br939()
 plot_br966_f2()
-plot_br966_f9()
+#plot_br966_f9()
