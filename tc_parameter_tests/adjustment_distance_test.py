@@ -2146,6 +2146,7 @@ def plot_adj_dist():
 
     plt.show()
 
+
 gamma = np.sqrt(0.0289 * 1.6)
 adjustment_distance = 1/gamma
 length_min = 4 * adjustment_distance

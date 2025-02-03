@@ -334,39 +334,72 @@ def rail_model_staggered(e_parallel, axle_pos_a, axle_pos_b):
     return i_relays_a, i_relays_b
 
 
-ia, ib = rail_model_staggered(e_parallel=np.array([0, -10]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+def stag_rs():
+    ia, ib = rail_model_staggered(e_parallel=np.array([0, -10]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
 
-plt.rcParams['font.size'] = '15'
-fig = plt.figure(figsize=(14, 12))
-gs = GridSpec(2, 2)
-ax0 = fig.add_subplot(gs[0, 0])
-ax1 = fig.add_subplot(gs[0, 1])
-ax2 = fig.add_subplot(gs[1, 0])
-ax3 = fig.add_subplot(gs[1, 1])
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 12))
+    gs = GridSpec(2, 2)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[1, 1])
 
-ax0.plot(ia[0], '.')
-ax1.plot(ia[1], '.')
-ax2.plot(ib[0], '.')
-ax3.plot(ib[1], '.')
+    ax0.plot(ia[0], '.')
+    ax1.plot(ia[1], '.')
+    ax2.plot(ib[0], '.')
+    ax3.plot(ib[1], '.')
 
-ax0.set_title("E = 0")
-ax1.set_title("E = 10 V/km")
-ax2.set_title("E = 0")
-ax3.set_title("E = 10 V/km")
-
-
-def ax_ad(ax):
-    ax.axhline(0.055, color='tomato', alpha=0.5)
-    ax.axhline(0.081, color='green', alpha=0.5)
-    ax.axhline(-0.055, color='tomato', alpha=0.5)
-    ax.axhline(-0.081, color='green', alpha=0.5)
-    ax.set_xlabel("Track circuit block")
-    ax.set_ylabel("Current through relay (A)")
+    ax0.set_title("E = 0")
+    ax1.set_title("E = 10 V/km")
+    ax2.set_title("E = 0")
+    ax3.set_title("E = 10 V/km")
 
 
-ax_ad(ax0)
-ax_ad(ax1)
-ax_ad(ax2)
-ax_ad(ax3)
+    def ax_ad(ax):
+        ax.axhline(0.055, color='tomato', linestyle='--', alpha=0.5)
+        ax.axhline(0.081, color='green', linestyle='--', alpha=0.5)
+        ax.axhline(-0.055, color='tomato', linestyle='--',  alpha=0.5)
+        ax.axhline(-0.081, color='green', linestyle='--',  alpha=0.5)
+        ax.set_xlabel("Track Circuit Block")
+        ax.set_ylabel("Current Through Relay (A)")
 
-plt.show()
+
+    ax_ad(ax0)
+    ax_ad(ax1)
+    ax_ad(ax2)
+    ax_ad(ax3)
+
+    plt.show()
+
+
+def stag_ws():
+    ia, ib = rail_model_staggered(e_parallel=np.array([0, -10]), axle_pos_a=np.array([68.68]), axle_pos_b=np.array([]))
+
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 12))
+    gs = GridSpec(2, 1)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[1, 0])
+
+    ax0.plot(ia[0], '.')
+    ax1.plot(ia[1], '.')
+
+    ax0.set_title("E = 0")
+    ax1.set_title("E = 10 V/km")
+
+    def ax_ad(ax):
+        ax.axhline(0.055, color='tomato', linestyle='--', alpha=0.5)
+        ax.axhline(0.081, color='green', linestyle='--', alpha=0.5)
+        ax.axhline(-0.055, color='tomato', linestyle='--', alpha=0.5)
+        ax.axhline(-0.081, color='green', linestyle='--', alpha=0.5)
+        ax.set_xlabel("Track Circuit Block")
+        ax.set_ylabel("Current Through Relay (A)")
+
+    ax_ad(ax0)
+    ax_ad(ax1)
+
+    plt.show()
+
+
+stag_ws()

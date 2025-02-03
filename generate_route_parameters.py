@@ -130,20 +130,19 @@ def generate_distances_and_bearings(route_name):
         # Compute bearing using a custom function
         bearing = calculate_bearing(start, end)
 
-        if dist < 1.6:
+        while dist >= 1.25:
+            distances.append(1.25)
+            bearings.append(bearing)
+            dist -= 1.25
+            doubles.append(i)
+
+        if dist < 1.25:
             distances.append(dist)
             bearings.append(bearing)
-        else:
-            distances.append(dist/2)
-            distances.append(dist/2)
-            bearings.append(bearing)
-            bearings.append(bearing)
-            doubles.append(int(i + len(doubles)/2))
-            doubles.append(int(i + 1 + ((len(doubles)-1)/2)))
 
     bearings = np.radians(bearings)
 
-    np.save(route_name + "_double_locs.npy", doubles)
+    np.save(route_name + "_split_tc_locs.npy", doubles)
     np.savez(route_name + "_distances_bearings", distances=distances, bearings=bearings)
 
 
@@ -154,8 +153,8 @@ def generate_distances_and_bearings(route_name):
 #    generate_longitudes_and_latitudes(route)
 
 
-#for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
-#    generate_distances_and_bearings(route)
+for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
+    generate_distances_and_bearings(route)
 
 
 #for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
