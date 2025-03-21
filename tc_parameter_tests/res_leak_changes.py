@@ -1466,12 +1466,14 @@ def plot_res_rs():
     ax0.set_xlabel("Electric Field Strength (V/km)")
     ax0.set_ylabel("Current Through Relay (A)")
     ax0.axhline(0.055, color="red", linestyle="-")
+    ax0.axhline(-0.055, color="red", linestyle="-")
     ax0.set_title(f"BR939A Relay")
 
     ax1.legend()
     ax1.set_xlabel("Electric Field Strength (V/km)")
     ax1.set_ylabel("Current Through Relay (A)")
     ax1.axhline(0.081, color="red", linestyle="-")
+    ax1.axhline(-0.081, color="red", linestyle="-")
     ax1.set_title(f"BR966 F2 Relay")
 
     #plt.savefig("leakage_rs.pdf")
@@ -1497,12 +1499,14 @@ def plot_res_ws():
     ax0.set_xlabel("Electric Field Strength (V/km)")
     ax0.set_ylabel("Current Through Relay (A)")
     ax0.axhline(0.081, color="limegreen", linestyle="-")
+    ax0.axhline(-0.081, color="limegreen", linestyle="-")
     ax0.set_title(f"BR939A Relay")
 
     ax1.legend()
     ax1.set_xlabel("Electric Field Strength (V/km)")
     ax1.set_ylabel("Current Through Relay (A)")
     ax1.axhline(0.120, color="limegreen", linestyle="-")
+    ax1.axhline(-0.120, color="limegreen", linestyle="-")
     ax1.set_title(f"BR966 F2 Relay")
 
     #plt.savefig("leakage_rs.pdf")
@@ -1545,7 +1549,7 @@ def plot_res_ws_range():
     plt.show()
 
 
-plot_leak_dif_ws()
-#plot_res_rs()
+#plot_leak_dif_ws()
+plot_res_rs()
 #plot_res_ws()
 #plot_res_ws_range()

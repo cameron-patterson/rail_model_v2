@@ -6,7 +6,7 @@ from shapely.geometry import LineString
 
 
 def gen_shape_file(section):
-    lon_lats = np.load(f"data/rail_data/{section}/{section}_sub_block_lons_lats.npz")
+    lon_lats = np.load(f"data/rail_data/{section}/{section}_split_block_lons_lats.npz")
     lon_points = lon_lats['lons']
     lat_points = lon_lats['lats']
 
@@ -26,17 +26,17 @@ def gen_shape_file(section):
     print(f"Shapefile saved to {output_path}")
 
 
-def plot_map():
-    lon_lats_gef = np.load("data/rail_data/glasgow_edinburgh_falkirk/glasgow_edinburgh_falkirk_sub_block_lons_lats.npz")
+def plot_map_both():
+    lon_lats_gef = np.load("data/rail_data/glasgow_edinburgh_falkirk/glasgow_edinburgh_falkirk_split_block_lons_lats.npz")
     lon_points_gef = lon_lats_gef['lons']
     lat_points_gef = lon_lats_gef['lats']
-    lon_lats_ecml = np.load("data/rail_data/east_coast_main_line/east_coast_main_line_sub_block_lons_lats.npz")
+    lon_lats_ecml = np.load("data/rail_data/east_coast_main_line/east_coast_main_line_split_block_lons_lats.npz")
     lon_points_ecml = lon_lats_ecml['lons']
     lat_points_ecml = lon_lats_ecml['lats']
-    lon_lats_wcml = np.load("data/rail_data/west_coast_main_line/west_coast_main_line_sub_block_lons_lats.npz")
+    lon_lats_wcml = np.load("data/rail_data/west_coast_main_line/west_coast_main_line_split_block_lons_lats.npz")
     lon_points_wcml = lon_lats_wcml['lons']
     lat_points_wcml = lon_lats_wcml['lats']
-    coast = np.loadtxt("data/storm_e_fields/coastline.txt")
+    coast = np.loadtxt("data/coastline.txt")
 
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(16, 10))
@@ -65,8 +65,44 @@ def plot_map():
     common_components(ax0)
     common_components(ax1)
 
-    plt.savefig("plots/map.jpg")
+    #plt.savefig("plots/map.jpg")
+    plt.show()
 
+
+def plot_map_new():
+    lon_lats_gef = np.load("data/rail_data/glasgow_edinburgh_falkirk/glasgow_edinburgh_falkirk_split_block_lons_lats.npz")
+    lon_points_gef = lon_lats_gef['lons']
+    lat_points_gef = lon_lats_gef['lats']
+    lon_lats_ecml = np.load("data/rail_data/east_coast_main_line/east_coast_main_line_split_block_lons_lats.npz")
+    lon_points_ecml = lon_lats_ecml['lons']
+    lat_points_ecml = lon_lats_ecml['lats']
+    lon_lats_wcml = np.load("data/rail_data/west_coast_main_line/west_coast_main_line_split_block_lons_lats.npz")
+    lon_points_wcml = lon_lats_wcml['lons']
+    lat_points_wcml = lon_lats_wcml['lats']
+    coast = np.loadtxt("data/coastline.txt")
+
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(8, 10))
+
+    gs = GridSpec(1, 1)
+    ax1 = fig.add_subplot(gs[:, :])
+
+    ax1.plot(lon_points_wcml[0:10], lat_points_wcml[0:10], linewidth=3, linestyle='-', color="red", label="West Coast Main Line")
+    ax1.plot(lon_points_gef[0:10], lat_points_gef[0:10], linewidth=3, linestyle='-', color="royalblue", label="Glasgow to Edinburgh via Falkirk High")
+    ax1.plot(lon_points_ecml[0:10], lat_points_ecml[0:10], linewidth=3, linestyle='-', color="darkorange", label="East Coast Main Line")
+
+    def common_components(ax):
+        ax.plot(coast[:, 0], coast[:, 1], color='lightgrey', linewidth=1, zorder=2)
+        ax.set_ylim(51, 57)
+        ax.set_xlim(-6, 1)
+        ax.set_xlabel("Geographic Longitude")
+        ax.set_ylabel("Geographic Latitude")
+        ax.legend()
+
+    common_components(ax1)
+
+    #plt.savefig("plots/map.jpg")
+    plt.show()
 
 # Plots the route using both saved longitudes and latitudes and a calculation based on the distances and bearings
 # Can also be used to save sub block longitudes and latitudes (by removing comment marker in code)
@@ -114,7 +150,7 @@ def plot_route_map(route_name):
     plt.show()
 
 
-#plot_map()
+plot_map_new()
 #plot_route_map("west_coast_main_line")
-for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
-    gen_shape_file(sec)
+#for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+#    gen_shape_file(sec)

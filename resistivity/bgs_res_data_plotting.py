@@ -77,5 +77,6 @@ def find_poly_of_coordinates():
         else:
             print(f"Point {i} is not inside any polygon.")
 
-plot_data_centroid()
-find_poly_of_coordinates()
+
+#plot_data_centroid()
+#find_poly_of_coordinates()

@@ -83,7 +83,7 @@ def generate_axle_positions_two_track_back_axle_block_centre(section_name):
         axle_pos_b = axle_pos_b[axle_pos_b < np.max(blocks_sum)]
         axle_pos_b_all[i] = axle_pos_b
 
-    np.savez(section_name + "_axle_positions_two_track_back_axle_block_centre.npz", axle_pos_a_all=axle_pos_a_all, axle_pos_b_all=axle_pos_b_all)
+    np.savez(f"data/axle_positions/block_centre/axle_positions_two_track_back_axle_block_centre_{section_name}.npz", axle_pos_a_all=axle_pos_a_all, axle_pos_b_all=axle_pos_b_all)
 
 
 # Generates the axle positions for when a train's rearmost axle in at the end of each block
@@ -133,7 +133,7 @@ def generate_axle_positions_two_track_back_axle_at_end(section_name):
         axle_pos_b = axle_pos_b[axle_pos_b < np.max(blocks_sum)]
         axle_pos_b_all[i] = axle_pos_b
 
-    np.savez(f"data/axle_positions/at_end/{section_name}_axle_positions_two_track_back_axle_at_end.npz", axle_pos_a_all=axle_pos_a_all, axle_pos_b_all=axle_pos_b_all)
+    np.savez(f"data/axle_positions/at_end/axle_positions_two_track_back_axle_at_end_{section_name}.npz", axle_pos_a_all=axle_pos_a_all, axle_pos_b_all=axle_pos_b_all)
 
 
 # Generates the axle positions based on a realistic timetable
@@ -190,7 +190,8 @@ def generate_axle_positions_two_track_timetable(section_name):
     np.savez(section_name + "_axle_positions_timetable", axle_pos_a_all=all_axle_pos_a, axle_pos_b_all=all_axle_pos_b)
 
 
-for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
-    generate_axle_positions_two_track_back_axle_at_end(sec)
+#for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+#    generate_axle_positions_two_track_back_axle_block_centre(sec)
+#    generate_axle_positions_two_track_back_axle_at_end(sec)
 
 #generate_axle_positions_two_track_timetable("east_coast_main_line")

@@ -1,4 +1,4 @@
-from geopy.distance import distance
+from geopy.distance import distance, geodesic
 from geopy import Point
 import json
 import matplotlib.pyplot as plt
@@ -126,14 +126,14 @@ def generate_distances_and_bearings(route_name):
         # Compute distance
         start = Point(lats[i - 1], lons[i - 1])
         end = Point(lats[i], lons[i])
-        dist = distance(start, end).kilometers
+        dist = geodesic(start, end).kilometers
         # Compute bearing using a custom function
         bearing = calculate_bearing(start, end)
 
         while dist >= 1.25:
-            distances.append(1.25)
+            distances.append(1)
             bearings.append(bearing)
-            dist -= 1.25
+            dist -= 1
             doubles.append(i)
 
         if dist < 1.25:
@@ -145,16 +145,16 @@ def generate_distances_and_bearings(route_name):
     np.save(route_name + "_split_tc_locs.npy", doubles)
     np.savez(route_name + "_distances_bearings", distances=distances, bearings=bearings)
 
-
-
+    new_lons, new_lats = calculate_coordinates(start_lat=lats[0], start_lon=lons[0], distances_km=distances, bearings_deg=np.rad2deg(bearings))
+    np.savez(route_name + '_split_block_lons_lats.npz', lons=new_lons, lats=new_lats)
 
 
 #for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
 #    generate_longitudes_and_latitudes(route)
 
 
-for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
-    generate_distances_and_bearings(route)
+#for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
+#    generate_distances_and_bearings(route)
 
 
 #for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
