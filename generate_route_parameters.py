@@ -149,12 +149,54 @@ def generate_distances_and_bearings(route_name):
     np.savez(route_name + '_split_block_lons_lats.npz', lons=new_lons, lats=new_lats)
 
 
+def generate_distances_and_bearings_halved(route_name):
+    lo_la = np.load("data/rail_data/" + route_name + "/" + route_name + "_lons_lats.npz")
+    lons = lo_la["lons"]
+    lats = lo_la["lats"]
+
+    distances = []
+    bearings = []
+    doubles = []
+
+    for i in range(1, len(lons)):
+        # Compute distance
+        start = Point(lats[i - 1], lons[i - 1])
+        end = Point(lats[i], lons[i])
+        dist = geodesic(start, end).kilometers
+        # Compute bearing using a custom function
+        bearing = calculate_bearing(start, end)
+
+        if dist < 1:
+            distances.append(dist)
+            bearings.append(bearing)
+        elif 2 > dist > 1:
+            distances.extend([dist / 2] * 2)
+            bearings.extend([bearing] * 2)
+        elif 3 > dist > 2:
+            distances.extend([dist / 3] * 3)
+            bearings.extend([bearing] * 3)
+        elif 4 > dist > 3:
+            distances.extend([dist / 4] * 4)
+            bearings.extend([bearing] * 4)
+        else:
+            distances.append(dist)
+            bearings.append(bearing)
+
+    bearings = np.radians(bearings)
+
+    np.save(route_name + "_split_tc_locs_halved.npy", doubles)
+    np.savez(route_name + "_distances_bearings_halved", distances=distances, bearings=bearings)
+
+    new_lons, new_lats = calculate_coordinates(start_lat=lats[0], start_lon=lons[0], distances_km=distances, bearings_deg=np.rad2deg(bearings))
+    np.savez(route_name + '_split_block_lons_lats_halved.npz', lons=new_lons, lats=new_lats)
+
+
 #for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
 #    generate_longitudes_and_latitudes(route)
 
 
 #for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
-#    generate_distances_and_bearings(route)
+#    generate_distances_and_bearings_halved(route)
 
 
 #for route in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:

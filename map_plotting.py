@@ -104,8 +104,7 @@ def plot_map_new():
     #plt.savefig("plots/map.jpg")
     plt.show()
 
-# Plots the route using both saved longitudes and latitudes and a calculation based on the distances and bearings
-# Can also be used to save sub block longitudes and latitudes (by removing comment marker in code)
+
 def plot_route_map(route_name):
     # Load in coordinates
     lo_la = np.load("data/rail_data/" + route_name + "/" + route_name + "_sub_block_lons_lats.npz")
@@ -150,7 +149,7 @@ def plot_route_map(route_name):
     plt.show()
 
 
-plot_map_new()
+#plot_map_new()
 #plot_route_map("west_coast_main_line")
 #for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
 #    gen_shape_file(sec)

@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-import textwrap
 
 
 def rail_model_two_track_e_parallel(section_name, e_parallel, axle_pos_a, axle_pos_b):
@@ -688,7 +687,7 @@ def plot_relay_currents_rs(route_name, e_par):
     ax0.plot(ia0[0], '.', label="Uniform Leakage", color="royalblue")
     ax0.plot(ia[0], 'x', label="Leakage by block", color="orangered")
     ax0.set_title(f"E = {e_par[0]} " + r"$\mathrm{V \cdot km^{-1}}$")
-    ax0.legend()
+    ax0.legend(loc="upper center")
     ax0.set_xlabel("Block Index")
     ax0.set_ylabel("Current Through Relay (A)")
     if route_name == "glasgow_edinburgh_falkirk":
@@ -700,8 +699,8 @@ def plot_relay_currents_rs(route_name, e_par):
     else:
         fig.suptitle(f"{route_name}")
 
-    plt.savefig(f"leakage_relay_currents_E{e_par}_{route_name}.pdf")
     #plt.show()
+    plt.savefig(f"leakage_relay_currents_E{e_par}_{route_name}.pdf")
 
 
 def plot_relay_currents_dif_rs(route_name, e_par):
@@ -728,23 +727,25 @@ def plot_relay_currents_dif_rs(route_name, e_par):
         fig.suptitle("Glasgow to Edinburgh via Falkirk High")
     elif route_name == "east_coast_main_line":
         fig.suptitle("East Coast Main Line")
-        ax1.set_ylim(-0.01, 0.03)
-        boundaries = np.array([18.5, 57.5, 86.5, 112.5, 216.5, 353.5, 400.5, 500.5, 530.5, 602.5, 770.5])
+        #ax1.set_ylim(-0.01, 0.03)
+        ax1.set_xlim(-1, 914)
+        boundaries = np.array([24.5, 66.5, 107.5, 128.5, 323.5, 427.5, 593.5, 658.5, 707.5, 739.5])
         for b in boundaries:
             ax0.axvline(b, color="gray", alpha=0.25)
             ax1.axvline(b, color="gray", alpha=0.25)
     elif route_name == "west_coast_main_line":
         fig.suptitle("West Coast Main Line")
-        ax1.set_xlim(-1, 764)
-        boundaries = np.array([71.5, 124.5, 170.5, 668.5, 708.5, 744])
-        for b in boundaries:
-            ax0.axvline(b, color="gray", alpha=0.25)
-            ax1.axvline(b, color="gray", alpha=0.25)
+        ax1.set_xlim(-1, 936)
+        #boundaries = np.array([71.5, 124.5, 170.5, 668.5, 708.5, 744])
+        #for b in boundaries:
+        #    ax0.axvline(b, color="gray", alpha=0.25)
+        #    ax1.axvline(b, color="gray", alpha=0.25)
     else:
         fig.suptitle(f"{route_name}")
 
     fig.align_ylabels([ax0, ax1])
-    plt.savefig(f"leakage_relay_currents_dif_E{e_par}_{route_name}.pdf")
+    #plt.show()
+    plt.savefig(f"leakage_relay_currents_dif_E{e_par}_{route_name}_rs.pdf")
 
 
 def find_thresholds_rs(route_name):
@@ -780,60 +781,94 @@ def find_thresholds_rs(route_name):
     ax0.set_xticks([])
     ax2.set_xticks([])
 
-    ax0.plot(range(0, 30), leakage[:30], '.', color="royalblue")
     ax0.axhline(1.6, linestyle='--', color="royalblue", alpha=0.75)
     ax0.set_ylabel(r"Leakage ($\mathrm{S \cdot km^{-1}}$)")
-    ax0.set_ylim(-0.2, 8.2)
-
-    ax1.plot(range(0, 30), e_thresholds[:30] - e_thresholds_og[:30], '.', color="limegreen")
     ax1.set_xlabel("Block Index")
     ax1.set_ylabel("\u0394 Threshold ($\mathrm{V \cdot km^{-1}}$)")
     ax1.axhline(0, linestyle='--', color="limegreen", alpha=0.75)
-
-    ax2.plot(range(30, 764), leakage[30:], '.', color="royalblue")
     ax2.axhline(1.6, linestyle='--', color="royalblue", alpha=0.75)
-    ax2.set_ylim(-0.2, 8.2)
-
-    ax3.plot(range(30, 764), e_thresholds[30:] - e_thresholds_og[30:], '.', color="limegreen")
     ax3.set_xlabel("Block Index")
     ax3.axhline(0, linestyle='--', color="limegreen", alpha=0.75)
 
     if route_name == "glasgow_edinburgh_falkirk":
         fig.suptitle("Glasgow to Edinburgh via Falkirk High")
-    elif route_name == "east_coast_main_line":
-        fig.suptitle("East Coast Main Line")
-        ax1.set_ylim(-0.01, 0.03)
-        boundaries = np.array([18.5, 57.5, 86.5, 112.5, 216.5, 353.5, 400.5, 500.5, 530.5, 602.5, 770.5])
-        for b in boundaries:
-            ax0.axvline(b, color="gray", alpha=0.25)
-            ax1.axvline(b, color="gray", alpha=0.25)
-    elif route_name == "west_coast_main_line":
-        fig.suptitle("West Coast Main Line")
-        ax0.set_xlim(-1, 30)
-        ax1.set_xlim(-1, 30)
-        ax2.set_xlim(29, 764)
-        ax3.set_xlim(29, 764)
-        ax3.set_ylim(-1, 1)
-        ax1.set_xticks([0, 10, 20, 30])
-        ax3.set_xticks([30, 100, 200, 300, 400, 500, 600, 700])
-        ax2.set_yticks([0, 2, 4, 6, 8])
-        ax3.set_yticks([-1, -0.5, 0, 0.5])
-
-        boundaries = np.array([71.5, 124.5, 170.5, 668.5, 708.5, 744])
+        ax0.plot(range(0, 27), leakage[:27], '.', color="royalblue")
+        ax1.plot(range(0, 27), e_thresholds[:27] - e_thresholds_og[:27], '.', color="limegreen")
+        ax2.plot(range(27, 119), leakage[27:], '.', color="royalblue")
+        ax3.plot(range(27, 119), e_thresholds[27:] - e_thresholds_og[27:], '.', color="limegreen")
+        ax0.set_ylim(-0.2, 6)
+        ax2.set_ylim(-0.2, 6)
+        ax1.set_ylim(-40, 110)
+        ax3.set_ylim(-1.5, 3.5)
+        ax0.set_xlim(-1, 27)
+        ax1.set_xlim(-1, 27)
+        ax2.set_xlim(27, 119)
+        ax3.set_xlim(27, 119)
+        ax0.set_xticks([])
+        ax2.set_xticks([])
+        ax1.set_xticks([0, 10, 20, 27])
+        ax3.set_xticks([27, 40, 60, 80, 100])
+        boundaries = np.array([82.5, 94.5])
         for b in boundaries:
             ax2.axvline(b, color="gray", alpha=0.25)
             ax3.axvline(b, color="gray", alpha=0.25)
+
+    elif route_name == "east_coast_main_line":
+        fig.suptitle("East Coast Main Line")
+        ax0.plot(range(0, 34), leakage[:34], '.', color="royalblue")
+        ax1.plot(range(0, 34), e_thresholds[:34] - e_thresholds_og[:34], '.', color="limegreen")
+        ax2.plot(range(34, 914), leakage[34:], '.', color="royalblue")
+        ax3.plot(range(34, 914), e_thresholds[34:] - e_thresholds_og[34:], '.', color="limegreen")
+
+        ax0.set_ylim(-0.2, 6.2)
+        ax2.set_ylim(-0.2, 6.2)
+        ax1.set_ylim(-160, 30)
+        ax3.set_ylim(-0.5, 2.5)
+        ax0.set_xlim(-1, 34)
+        ax1.set_xlim(-1, 34)
+        ax2.set_xlim(34, 914)
+        ax3.set_xlim(34, 914)
+        ax0.set_xticks([])
+        ax2.set_xticks([])
+        ax1.set_xticks([0, 10, 20, 33])
+        ax3.set_xticks([33, 100, 200, 300, 400, 500, 600, 700, 800, 900])
+        ax0.set_yticks([0, 2, 4, 6])
+        ax2.set_yticks([0, 2, 4, 6])
+        ax1.set_yticks([-150, -100, -50, 0])
+        ax3.set_yticks([-0.5, 0, 0.5, 1, 1.5, 2])
+
+        boundaries = np.array([66.5, 107.5, 128.5, 323.5, 427.5, 593.5, 658.5, 707.5, 739.5])
+        for b in boundaries:
+            ax2.axvline(b, color="gray", alpha=0.25)
+            ax3.axvline(b, color="gray", alpha=0.25)
+
+    elif route_name == "west_coast_main_line":
+        fig.suptitle("West Coast Main Line")
+        ax0.plot(range(0, 34), leakage[:34], '.', color="royalblue")
+        ax1.plot(range(0, 34), e_thresholds[:34] - e_thresholds_og[:34], '.', color="limegreen")
+        ax2.plot(range(34, 936), leakage[34:], '.', color="royalblue")
+        ax3.plot(range(34, 936), e_thresholds[34:] - e_thresholds_og[34:], '.', color="limegreen")
+        ax0.set_ylim(-0.2, 8.2)
+        ax2.set_ylim(-0.2, 8.2)
+        ax0.set_xlim(-1, 34)
+        ax1.set_xlim(-1, 34)
+        ax2.set_xlim(33, 764)
+        ax3.set_xlim(33, 764)
+        ax3.set_ylim(-0.6, 0.3)
+        ax1.set_xticks([0, 10, 20, 30])
+        ax3.set_xticks([30, 100, 200, 300, 400, 500, 600, 700, 800, 900])
+        ax2.set_yticks([0, 2, 4, 6, 8])
+        ax3.set_yticks([-0.6, -0.4, -0.2, 0, 0.2])
+
     else:
         fig.suptitle(f"{route_name}")
 
     fig.align_ylabels([ax0, ax1])
-    #plt.savefig(f"leakage_threshold_dif_{route_name}.pdf")
+    plt.savefig(f"leakage_threshold_dif_{route_name}.pdf")
+    #plt.show()
 
-    plt.show()
 
-
-def crossover_rs():
-    route_name = "west_coast_main_line"
+def crossover_rs(route_name):
     e_par = np.array([-5, -2.5, 0, 2.5, 5])
 
     plt.rcParams['font.size'] = '15'
@@ -857,59 +892,251 @@ def crossover_rs():
         ax1.legend()
         ax1.set_xlabel("Block Index")
         ax1.set_ylabel("Current Through Relay (A)")
-        ax0.set_xlim(0, 20)
-        ax1.set_xlim(0, 20)
+
+    if route_name == "west_coast_main_line":
+        fig.suptitle(f"West Coast Main Line")
+        ax0.axvline(13.43, color="gray", alpha=0.25)
+        ax1.axvline(10.64, color="gray", alpha=0.25)
+        ax0.set_xlim(0, 935)
+        ax1.set_xlim(0, 935)
         ax0.set_xticks([])
         ax1.set_xticks([0, 5, 10, 15, 20])
+        ax0.set_xlim(0, 20)
+        ax1.set_xlim(0, 20)
 
-        ax0.axvline(13.45, color="gray", alpha=0.25)
-        ax1.axvline(10.66, color="gray", alpha=0.25)
-
-        fig.suptitle(f"West Coast Main Line")
-
-    plt.savefig(f"crossover_west_coast_main_line.pdf")
-    #plt.show()
-
-
-def plot_relay_currents_ws(route_name, e_par):
-    ia0, ib0 = rail_model_two_track_e_parallel(section_name=route_name, e_parallel=e_par, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-    ia, ib = rail_model_two_track_e_parallel_leakage_by_block(section_name=route_name, e_parallel=e_par, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(12, 6))
-    gs = GridSpec(1, 1)
-    ax0 = fig.add_subplot(gs[:, :])
-    ax0.plot(ia0[0], '.', label="Uniform Leakage", color="royalblue")
-    ax0.plot(ia[0], 'x', label="Leakage by block", color="orangered")
-    ax0.set_title(f"E = {e_par[0]} " + r"$\mathrm{V \cdot km^{-1}}$")
-    ax0.legend()
-    ax0.set_xlabel("Block Index")
-    ax0.set_ylabel("Current Through Relay (A)")
-    if route_name == "glasgow_edinburgh_falkirk":
-        fig.suptitle("Glasgow to Edinburgh via Falkirk High")
     elif route_name == "east_coast_main_line":
-        fig.suptitle("East Coast Main Line")
-    elif route_name == "west_coast_main_line":
-        fig.suptitle("West Coast Main Line")
+        fig.suptitle(f"East Coast Main Line")
+        ax0.axvline(9.655, color="gray", alpha=0.25)
+        ax1.axvline(10.98, color="gray", alpha=0.25)
+        ax0.set_xlim(0, 913)
+        ax1.set_xlim(0, 913)
+        ax0.set_xticks([])
+        ax1.set_xticks([0, 5, 10, 15, 20])
+        ax0.set_xlim(0, 20)
+        ax1.set_xlim(0, 20)
+
+    elif route_name == "glasgow_edinburgh_falkirk":
+        fig.suptitle(f"Glasgow to Edinburgh via Falkirk")
+        ax0.axvline(9.156, color="gray", alpha=0.25)
+        ax1.axvline(5.806, color="gray", alpha=0.25)
+        ax0.set_xlim(0, 118)
+        ax1.set_xlim(0, 118)
+        ax0.set_xticks([])
+        ax1.set_xticks([0, 5, 10, 15, 20])
+        ax0.set_xlim(0, 20)
+        ax1.set_xlim(0, 20)
+
     else:
         fig.suptitle(f"{route_name}")
 
-    plt.savefig(f"leakage_relay_currents_E{e_par}_{route_name}.pdf")
+    plt.savefig(f"crossover_{route_name}.pdf")
     #plt.show()
 
 
-for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
-    for e in [0, 5, -5]:
-        plot_relay_currents_ws(name, np.array([e]))
+def save_relay_currents_ws(route_name):
+    e_par = np.linspace(-100, 100, 2001)
+    axle_data = np.load(f"../data/axle_positions/block_centre/axle_positions_two_track_back_axle_at_centre_{route_name}.npz", allow_pickle=True)
+    axle_pos_a = axle_data["axle_pos_a_all"]
+    axles_a_first_half = [val for arr in axle_pos_a[0::2] for val in arr]
+    axles_a_second_half = [val for arr in axle_pos_a[1::2] for val in arr]
+    print(f"{route_name}_first_start")
+    ia0_first, ib0_first = rail_model_two_track_e_parallel(section_name=route_name, e_parallel=e_par, axle_pos_a=axles_a_first_half, axle_pos_b=[])
+    print(f"{route_name}_first_halfway")
+    ia_first, ib_first = rail_model_two_track_e_parallel_leakage_by_block(section_name=route_name, e_parallel=e_par, axle_pos_a=axles_a_first_half, axle_pos_b=[])
+    print(f"{route_name}_second_start")
+    ia0_second, ib0_second = rail_model_two_track_e_parallel(section_name=route_name, e_parallel=e_par, axle_pos_a=axles_a_second_half, axle_pos_b=[])
+    print(f"{route_name}_second_halfway")
+    ia_second, ib_second = rail_model_two_track_e_parallel_leakage_by_block(section_name=route_name, e_parallel=e_par, axle_pos_a=axles_a_second_half, axle_pos_b=[])
 
-#for name in ["west_coast_main_line"]:
+    ia0 = ia0_first
+    ia = ia_first
+    ia0[:, 1::2] = ia0_second[:, 1::2]
+    ia[:, 1::2] = ia_second[:, 1::2]
+
+    np.save(f"occupied_ia_unileak_{route_name}", ia0)
+    np.save(f"occupied_ia_varleak_{route_name}", ia)
+
+
+def save_relay_currents_ws_single_axle(route_name):
+    e_par = np.linspace(-100, 100, 2001)
+    axle_data = np.load(f"../data/axle_positions/block_centre/axle_positions_two_track_back_axle_at_centre_{route_name}.npz", allow_pickle=True)
+    axle_pos_a = axle_data["axle_pos_a_all"]
+    axles_a = [arr[-1] for arr in axle_pos_a]
+    print(f"{route_name}start")
+    ia0, ib0 = rail_model_two_track_e_parallel(section_name=route_name, e_parallel=e_par, axle_pos_a=axles_a, axle_pos_b=[])
+    print(f"{route_name}_halfway")
+    ia, ib = rail_model_two_track_e_parallel_leakage_by_block(section_name=route_name, e_parallel=e_par, axle_pos_a=axles_a, axle_pos_b=[])
+    np.save(f"occupied_ia_unileak_{route_name}_single_axle", ia0)
+    np.save(f"occupied_ia_varleak_{route_name}_single_axle", ia)
+
+
+def plot_relay_currents_ws(route_name):
+    ia0s = np.load(f"../data/resistivity/currents/occupied_ia_unileak_{route_name}.npy")
+    ias = np.load(f"../data/resistivity/currents/occupied_ia_varleak_{route_name}.npy")
+
+    index = 1001
+    e = np.linspace(-100, 100, 2001)
+    e_par = e[index]
+    ia0 = ia0s[index, :]
+    ia = ias[index, :]
+
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 8))
+    gs = GridSpec(2, 1)
+    gs.update(hspace=0)
+    ax0 = fig.add_subplot(gs[0])
+    ax1 = fig.add_subplot(gs[1])
+    ax0.plot(ia0, '.', label="Uniform Leakage", color="royalblue")
+    ax0.plot(ia, '.', label="Leakage by block", color="orangered")
+    ax0.set_title(f"E = {e_par} " + r"$\mathrm{V \cdot km^{-1}}$")
+    ax0.legend()
+    ax1.set_xlabel("Block Index")
+    ax0.set_ylabel("Current Through Relay (A)")
+    ax1.set_ylabel("Current Difference (A)")
+    ax0.set_xticks([])
+    ax1.plot(np.array(ia) - np.array(ia0), '.', color='darkorchid')
+    boundaries = np.array([66.5, 107.5, 128.5, 323.5, 427.5, 593.5, 658.5, 707.5, 739.5])
+    for b in boundaries:
+        ax0.axvline(b, color="gray", alpha=0.25)
+        ax1.axvline(b, color="gray", alpha=0.25)
+    if route_name == "glasgow_edinburgh_falkirk":
+        fig.suptitle("Glasgow to Edinburgh via Falkirk High")
+        ax0.set_xlim(-1, 119)
+        ax1.set_xlim(-1, 119)
+    elif route_name == "east_coast_main_line":
+        fig.suptitle("East Coast Main Line")
+        ax0.set_xlim(-1, 914)
+        ax1.set_xlim(-1, 914)
+        if e_par == 0:
+            ax0.set_ylim(-0.0035, 0.0032)
+            ax1.set_ylim(-0.004, 0.0032)
+            ax0.set_yticks([-0.003, -0.002, -0.001, 0, 0.001, 0.002, 0.003])
+            ax1.set_yticks([-0.004, -0.003, -0.002, -0.001, 0, 0.001, 0.002, 0.003])
+        elif e_par == 5:
+            ax0.set_ylim(-0.16, 0)
+            ax1.set_ylim(-0.005, 0.011)
+            ax0.set_yticks([-0.15, -0.125, -0.10, -0.075, -0.05, -0.025, 0])
+            ax1.set_yticks([-0.005, -0.0025, 0, 0.0025, 0.005, 0.0075, 0.01])
+        elif e_par == -5:
+            ax0.set_ylim(-0.01, 0.15)
+            ax1.set_ylim(-0.01, 0.006)
+            ax0.set_yticks([0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15])
+            ax1.set_yticks([-0.01, -0.0075, -0.005, -0.0025, 0, 0.0025, 0.005])
+        else:
+            pass
+    elif route_name == "west_coast_main_line":
+        fig.suptitle("West Coast Main Line")
+        ax0.set_xlim(-1, 936)
+        ax1.set_xlim(-1, 936)
+    else:
+        fig.suptitle(f"{route_name}")
+
+    fig.align_ylabels([ax0, ax1])
+    #plt.savefig(f"leakage_relay_currents_E{e_par}_{route_name}_ws.pdf")
+    plt.show()
+
+
+def find_thresholds_ws(route_name):
+    leakage = np.load(f"../data/resistivity/{route_name}_leakage_by_block.npy")
+    e_par = np.linspace(-100, 100, 2001)
+    ia = np.load(f"../data/resistivity/currents/occupied_ia_varleak_{route_name}_single_axle.npy")
+    ia_og = np.load(f"../data/resistivity/currents/occupied_ia_unileak_{route_name}_single_axle.npy")
+    e_thresholds = []
+    e_thresholds_og = []
+    for i in range(0, len(ia[0, :])):
+        currents = ia[:, i]
+        current_threshold_dif = np.abs(currents - 0.081)
+        e_threshold = e_par[np.where(current_threshold_dif == np.min(current_threshold_dif))]
+        e_thresholds.append(e_threshold)
+        currents_og = ia_og[:, i]
+        current_threshold_dif_og = np.abs(currents_og - 0.081)
+        e_threshold_og = e_par[np.where(current_threshold_dif_og == np.min(current_threshold_dif_og))]
+        e_thresholds_og.append(e_threshold_og)
+    e_thresholds = np.array(e_thresholds)
+    e_thresholds_og = np.array(e_thresholds_og)
+    e_thresholds = np.where((e_thresholds == 100) | (e_thresholds == -100), np.nan, e_thresholds)
+    e_thresholds_og = np.where((e_thresholds_og == 100) | (e_thresholds_og == -100), np.nan, e_thresholds_og)
+
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 7))
+    gs = GridSpec(2, 1)
+    gs.update(hspace=0)
+    gs.update(wspace=0.28)
+    ax0 = fig.add_subplot(gs[0])
+    ax1 = fig.add_subplot(gs[1])
+    ax0.set_xticks([])
+
+    ax0.axhline(1.6, linestyle='--', color="royalblue", alpha=0.75)
+    ax0.set_ylabel(r"Leakage ($\mathrm{S \cdot km^{-1}}$)")
+    ax1.set_xlabel("Block Index")
+    ax1.set_ylabel("\u0394 Threshold ($\mathrm{V \cdot km^{-1}}$)")
+    ax1.axhline(0, linestyle='--', color="limegreen", alpha=0.75)
+
+    if route_name == "glasgow_edinburgh_falkirk":
+        fig.suptitle("Glasgow to Edinburgh via Falkirk High")
+        ax0.plot(range(0, 119), leakage, '.', color="royalblue")
+        ax1.plot(range(0, 119), e_thresholds - e_thresholds_og, '.', color="limegreen")
+        ax0.set_ylim(-0.2, 6)
+        ax1.set_ylim(-40, 110)
+        ax0.set_xlim(-1, 27)
+        ax1.set_xlim(-1, 27)
+        ax0.set_xticks([])
+        ax1.set_xticks([0, 10, 20, 27])
+        boundaries = np.array([82.5, 94.5])
+        for b in boundaries:
+            ax0.axvline(b, color="gray", alpha=0.25)
+            ax1.axvline(b, color="gray", alpha=0.25)
+
+    elif route_name == "east_coast_main_line":
+        fig.suptitle("East Coast Main Line")
+        ax0.plot(range(0, 914), leakage, '.', color="royalblue")
+        ax1.plot(range(0, 914), e_thresholds - e_thresholds_og, '.', color="limegreen")
+        #ax0.set_ylim(-0.2, 6.2)
+        #ax1.set_ylim(-160, 30)
+        ax0.set_xlim(-1, 914)
+        ax1.set_xlim(-1, 914)
+        ax0.set_xticks([])
+        #ax1.set_xticks([0, 10, 20, 33])
+        #ax0.set_yticks([0, 2, 4, 6])
+        #ax1.set_yticks([-150, -100, -50, 0])
+
+        boundaries = np.array([66.5, 107.5, 128.5, 323.5, 427.5, 593.5, 658.5, 707.5, 739.5])
+        for b in boundaries:
+            ax0.axvline(b, color="gray", alpha=0.25)
+            ax1.axvline(b, color="gray", alpha=0.25)
+
+    elif route_name == "west_coast_main_line":
+        fig.suptitle("West Coast Main Line")
+        ax0.plot(range(0, 936), leakage, '.', color="royalblue")
+        ax1.plot(range(0, 936), e_thresholds - e_thresholds_og, '.', color="limegreen")
+        ax0.set_ylim(-0.2, 8.2)
+        ax0.set_xlim(-1, 34)
+        ax1.set_xlim(-1, 34)
+        ax1.set_xticks([0, 10, 20, 30])
+
+    else:
+        fig.suptitle(f"{route_name}")
+
+    fig.align_ylabels([ax0, ax1])
+    #plt.savefig(f"leakage_threshold_dif_ws_{route_name}.pdf")
+    plt.show()
+
+
+#for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
 #    for e in [0, 5, -5]:
-#        plot_relay_currents_dif(name, np.array([e]))
+#        plot_relay_currents_rs(name, np.array([e]))
 
-#crossover()
+#for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+#    for e in [0, 5, -5]:
+#        plot_relay_currents_dif_rs(name, np.array([e]))
 
+#for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+#    find_thresholds_rs(name)
 
-#for name in ["east_coast_main_line", "glasgow_edinburgh_falkirk"]:
-#    find_thresholds(name)
+#for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+#    crossover_rs(name)
 
-
+for name in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
+    #save_relay_currents_ws(name)
+    plot_relay_currents_ws(name)
+    #find_thresholds_ws(name)

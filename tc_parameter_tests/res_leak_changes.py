@@ -1377,6 +1377,7 @@ def plot_leak_dif_ws():
     #plt.savefig("leakage_rs.pdf")
     plt.show()
 
+
 def plot_leak_rs_single():
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(14, 8))
@@ -1550,6 +1551,6 @@ def plot_res_ws_range():
 
 
 #plot_leak_dif_ws()
-plot_res_rs()
+#plot_res_rs()
 #plot_res_ws()
 #plot_res_ws_range()

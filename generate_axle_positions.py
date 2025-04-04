@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 
 # Generates the axle positions given the position of the train's front axle
@@ -83,7 +85,7 @@ def generate_axle_positions_two_track_back_axle_block_centre(section_name):
         axle_pos_b = axle_pos_b[axle_pos_b < np.max(blocks_sum)]
         axle_pos_b_all[i] = axle_pos_b
 
-    np.savez(f"data/axle_positions/block_centre/axle_positions_two_track_back_axle_block_centre_{section_name}.npz", axle_pos_a_all=axle_pos_a_all, axle_pos_b_all=axle_pos_b_all)
+    np.savez(f"data/axle_positions/block_centre/axle_positions_two_track_back_axle_at_centre_{section_name}.npz", axle_pos_a_all=axle_pos_a_all, axle_pos_b_all=axle_pos_b_all)
 
 
 # Generates the axle positions for when a train's rearmost axle in at the end of each block
@@ -190,8 +192,41 @@ def generate_axle_positions_two_track_timetable(section_name):
     np.savez(section_name + "_axle_positions_timetable", axle_pos_a_all=all_axle_pos_a, axle_pos_b_all=all_axle_pos_b)
 
 
+def axle_plot_test(name):
+    for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+        data = np.load(f"data/rail_data/{name}/{name}_distances_bearings.npz")
+        blocks = data["distances"]
+        blocks_sum = np.cumsum(blocks)
+        blocks_sum = np.insert(blocks_sum, 0, 0)
+
+        axles_end_a = \
+        np.load(f"data/axle_positions/at_end/axle_positions_two_track_back_axle_at_end_{name}.npz", allow_pickle=True)[
+            "axle_pos_a_all"]
+        axles_centre_a = \
+        np.load(f"data/axle_positions/block_centre/axle_positions_two_track_back_axle_block_centre_{name}.npz",
+                allow_pickle=True)["axle_pos_a_all"]
+
+        plt.rcParams['font.size'] = '15'
+        fig = plt.figure(figsize=(12, 6))
+        gs = GridSpec(2, 1)
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1], sharex=ax1)
+
+        for i in range(0, len(axles_end_a)):
+            ax1.plot(axles_end_a[i], np.full(len(axles_end_a[i]), 0), 'x', color="cornflowerblue")
+            ax1.axvline(blocks_sum[i], color="orangered", alpha=0.5)
+
+        for i in range(0, len(axles_end_a)):
+            ax2.plot(axles_centre_a[i], np.full(len(axles_centre_a[i]), 0), 'x', color="cornflowerblue")
+            ax2.axvline(blocks_sum[i], color="orangered", alpha=0.5)
+            ax2.axvline(blocks_sum[i + 1] - (blocks[i] / 2), color="orangered", alpha=0.5, linestyle='--')
+
+        plt.show()
+
+
 #for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
 #    generate_axle_positions_two_track_back_axle_block_centre(sec)
 #    generate_axle_positions_two_track_back_axle_at_end(sec)
 
 #generate_axle_positions_two_track_timetable("east_coast_main_line")
+

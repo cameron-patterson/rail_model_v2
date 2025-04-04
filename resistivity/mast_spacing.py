@@ -83,6 +83,55 @@ def split_path_by_distance(route_name):
     return resistivities_masts, block_indices_masts
 
 
+def split_path_by_distance_halved(route_name):
+    lo_la = np.load(f"../data/rail_data/{route_name}/{route_name}_split_block_lons_lats_halved.npz")
+    lons = lo_la["lons"]
+    lats = lo_la["lats"]
+
+    distances = []
+    bearings = []
+    block_indices = [9999]
+
+    dist_left = 0
+    for i in range(1, len(lons)):
+        # Compute distance
+        start = Point(lats[i - 1], lons[i - 1])
+        end = Point(lats[i], lons[i])
+        dist = distance(start, end).kilometers
+        # Compute bearing using a custom function
+        bearing = calculate_bearing(start, end)
+
+        while dist >= 0.06:
+            distances.append(0.06 - dist_left)
+            bearings.append(bearing)
+            block_indices.append(i-1)
+            dist -= 0.06
+            dist_left = 0
+
+        if dist < 0.06:
+            distances.append(dist)
+            bearings.append(bearing)
+            block_indices.append(9999)
+            dist_left = dist
+
+    lon_lats = np.load(f"../data/rail_data/{route_name}/{route_name}_lons_lats.npz")
+    lons_0 = lon_lats['lons']
+    lats_0 = lon_lats['lats']
+
+    lons_masts_and_ends, lats_masts_and_ends = calculate_coordinates(start_lat=lats_0[0], start_lon=lons_0[0], distances_km=distances, bearings_deg=bearings)
+    mast_locs = np.where(np.array(block_indices) != 9999)[0]
+    end_locs = np.where(np.array(block_indices) == 9999)[0]
+
+    resistivities_masts = find_res_of_coordinates(lons_masts_and_ends[mast_locs], lats_masts_and_ends[mast_locs])
+    block_indices_masts = np.array(block_indices)[mast_locs]
+
+    np.savez(f"{route_name}_mast_lons_lats_halved.npz", lons=lons_masts_and_ends[mast_locs], lats=lats_masts_and_ends[mast_locs])
+    np.save(f"{route_name}_resistivities_masts_halved.npy", resistivities_masts)
+    np.save(f"{route_name}_block_indices_masts_halved.npy", block_indices_masts)
+
+    return resistivities_masts, block_indices_masts
+
+
 def calculate_leakage(route_name):
     data = np.load(f"../data/rail_data/{route_name}/{route_name}_distances_bearings.npz")
     blocks = data["distances"]
@@ -102,6 +151,28 @@ def calculate_leakage(route_name):
     plt.show()
 
     np.save(f"{route_name}_leakage_by_block.npy", block_leaks)
+
+
+def calculate_leakage_halved(route_name):
+    data = np.load(f"../data/rail_data/{route_name}/{route_name}_distances_bearings_halved.npz")
+    blocks = data["distances"]
+    resistivities = np.load(f"../data/resistivity/{route_name}_resistivities_masts_halved.npy")
+    block_indices = np.load(f"../data/resistivity/{route_name}_block_indices_masts_halved.npy")
+    block_leaks = []
+
+    # All blocks
+    for i in range(0, len(blocks)):
+        locs = np.where(np.isin(block_indices, i))[0].astype(int)
+        mast_resistivity = resistivities[locs]
+        mast_admittance = 1 / (mast_resistivity * 0.137817)
+        total_block_admittance = np.sum(mast_admittance)
+        block_leak = total_block_admittance / blocks[i]
+        block_leaks.append(block_leak)
+
+    plt.plot(block_leaks, '.')
+    plt.show()
+
+    np.save(f"{route_name}_leakage_by_block_halved.npy", block_leaks)
 
 
 def plot_resistivity_along_line(route_name):
@@ -222,6 +293,10 @@ def res_leak_comb(route_name):
     elif route_name == "east_coast_main_line":
         fig.suptitle("East Coast Main Line")
         tick_spacing = 100
+        boundaries = np.array([66.5, 107.5, 128.5, 323.5, 427.5, 593.5, 658.5, 707.5, 739.5])
+        for b in boundaries:
+            ax0.axvline(b, color="gray", alpha=0.25)
+            ax1.axvline(b, color="gray", alpha=0.25)
     elif route_name == "west_coast_main_line":
         fig.suptitle("West Coast Main Line")
         tick_spacing = 100
@@ -235,13 +310,17 @@ def res_leak_comb(route_name):
     ax1.set_xlabel("Block Index")
     ax1.set_ylabel(r"Leakage ($\mathrm{S \cdot km^{-1}}$)")
 
-    plt.savefig(f"res_leak_comb_{route_name}.pdf")
+    #plt.savefig(f"res_leak_comb_{route_name}.pdf")
+    plt.show()
 
 
 for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+    #split_path_by_distance_halved(name)
+    #calculate_leakage_halved(name)
     #calculate_leakage(name)
     #plot_resistivity_along_line(name)
     #plot_block_leakage(name)
     #block_leakage_histogram(name)
     res_leak_comb(name)
+
 
