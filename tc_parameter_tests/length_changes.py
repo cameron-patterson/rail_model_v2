@@ -645,6 +645,31 @@ def rail_model_two_track_e_parallel_966(mid_block_length, e_parallel, axle_pos_a
     return i_relays_a, i_relays_b
 
 
+def plot_length_changes(section_name):
+    data = np.load(f"../data/rail_data/{section_name}/{section_name}_distances_bearings.npz")
+    blocks = data["distances"]
+
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(10, 5))
+    gs = GridSpec(1, 1)
+    ax0 = fig.add_subplot(gs[0])
+    ax0.plot(blocks, '.')
+    ax0.set_xlim(-5, len(blocks)+4)
+
+    if section_name == "glasgow_edinburgh_falkirk":
+        ax0.set_title("Glasgow to Edinburgh via Falkirk High")
+    elif section_name == "west_coast_main_line":
+        ax0.set_title("West Coast Main Line")
+    elif section_name == "east_coast_main_line":
+        ax0.set_title("East Coast Main Line")
+
+    ax0.set_ylabel("Block Length (km)")
+    ax0.set_xlabel("Block Index")
+
+    #plt.show()
+    plt.savefig(f"block_lengths_{section_name}")
+
+
 def length_currents_0():
     lengths = np.linspace(0.1, 1, 10)
     ia_mid = np.empty(len(lengths))
@@ -725,4 +750,5 @@ def length_e_field_ws():
     plt.show()
 
 
-length_e_field_ws()
+for name in ["east_coast_main_line", "west_coast_main_line", "glasgow_edinburgh_falkirk"]:
+    plot_length_changes(name)

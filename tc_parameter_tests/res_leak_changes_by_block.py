@@ -1,40 +1,41 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import ticker
 from matplotlib.gridspec import GridSpec
 
 
-def rail_model_two_track_e_parallel_939(leakage, resistance, e_parallel, axle_pos_a, axle_pos_b):
+def rail_model_two_track_e_parallel_leak_939_block(leakage, resistance, e_parallel, axle_pos_a, axle_pos_b):
     # Create dictionary of network parameters
     parameters = {"z_sig": resistance,  # Signalling rail series impedance (ohms/km)
                   "z_trac": resistance,  # Traction return rail series impedance (ohms/km)
                   "y_sig": 0.1,  # Signalling rail parallel admittance for moderate conditions (siemens/km)
-                  "y_trac": leakage,  # Traction return rail parallel admittance in moderate conditions (siemens/km)
                   "v_power": 10,  # Track circuit power supply voltage (volts)
                   "r_power": 7.2,  # Track circuit power supply resistance (ohms)
                   "r_relay": 20,  # Track circuit relay resistance (ohms)
                   "r_cb": 1e-3,  # Cross bond resistance (ohms)
-                  "r_axle": 156e-3,  # Axle resistance (ohms)
+                  "r_axle": 251e-4,  # Axle resistance (ohms)
                   "i_power": 10 / 7.2,  # Track circuit power supply equivalent current source (amps)
                   "y_power": 1 / 7.2,  # Track circuit power supply admittance (siemens)
                   "y_relay": 1 / 20,  # Track circuit relay admittance (siemens)
                   "y_cb": 1 / 1e-3,  # Cross bond admittance (siemens)
-                  "y_axle": 640}  # Axle admittance (siemens)
-
-    # Calculate the electrical characteristics of the rails
-    gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig"])
-    gamma_trac = np.sqrt(parameters["z_trac"] * parameters["y_trac"])
-    z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig"])
-    z0_trac = np.sqrt(parameters["z_trac"] / parameters["y_trac"])
+                  "y_axle": 1 / 251e-4}  # Axle admittance (siemens)
 
     # Load in the lengths and bearings of the track circuit blocks
     # Note: zero degrees is directly northwards, with positive values increasing clockwise
     blocks = np.full(201, 0.68)
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
+    y_trac_block = np.full(len(blocks), 1.6)
+    y_trac_block[100] = leakage
+
+    # Calculate the electrical characteristics of the rails
+    gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig"])
+    gamma_trac_block = np.sqrt(parameters["z_trac"] * y_trac_block).flatten()
+    z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig"])
+    z0_trac_block = np.sqrt(parameters["z_trac"] / y_trac_block).flatten()
+
     # Add cross bonds and axles which split the blocks into sub blocks
     # Note: "a" and "b" are used to identify the opposite directions of travel in this network (two-track)
-    pos_cb = np.arange(0.4001, np.sum(blocks), 0.4)  # Position of the cross bonds
+    pos_cb = np.arange(0.40001, np.sum(blocks), 0.4)  # Position of the cross bonds
     trac_sub_block_sum_a = np.sort(np.insert(np.concatenate((blocks_sum, pos_cb, axle_pos_a)), 0, 0))  # Traction return rail connects to axles and cross bonds
     sig_sub_block_sum_a = np.sort(np.insert(np.concatenate((blocks_sum, blocks_sum[:-1], axle_pos_a)), 0, 0))  # Signalling rail connects to axles, but need to add points on either side or IRJ
     trac_sub_block_sum_b = np.sort(np.insert(np.concatenate((blocks_sum, pos_cb, axle_pos_b)), 0, 0))
@@ -52,17 +53,45 @@ def rail_model_two_track_e_parallel_939(leakage, resistance, e_parallel, axle_po
     else:
         pass
 
-        # Set up equivalent-pi parameters
-        ye_trac_a = 1 / (z0_trac * np.sinh(gamma_trac * trac_sub_blocks_a))  # Series admittance for traction return rail
-        ye_sig_a = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_a))  # Series admittance for signalling rail
-        ye_trac_b = 1 / (z0_trac * np.sinh(gamma_trac * trac_sub_blocks_b))
-        ye_sig_b = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_b))
-        yg_trac = (np.cosh(gamma_trac * blocks) - 1) * (1 / (z0_trac * np.sinh(gamma_trac * blocks)))  # Parallel admittance for traction return rail
-        yg_sig = (np.cosh(gamma_sig * blocks) - 1) * (1 / (z0_sig * np.sinh(gamma_sig * blocks)))  # Parallel admittance for signalling rail
-        yg_trac_comb = np.empty(len(yg_trac) + 1)
-        yg_trac_comb[0] = yg_trac[0]
-        yg_trac_comb[1:-1] = yg_trac[:-1] + yg_trac[1:]
-        yg_trac_comb[-1] = yg_trac[-1]
+    # Set sub block value for z0 and gamma
+    j = 0
+    value = 0
+    z0_trac_sub_block_a = []
+    gamma_trac_sub_block_a = []
+    for i in range(0, len(blocks_sum)):
+        while value < blocks_sum[i]:
+            value += trac_sub_blocks_a[j]
+            z0_trac_sub_block_a.append(z0_trac_block[i])
+            gamma_trac_sub_block_a.append(gamma_trac_block[i])
+            j += 1
+    gamma_trac_sub_block_a = np.array(gamma_trac_sub_block_a)
+    z0_trac_sub_block_a = np.array(z0_trac_sub_block_a)
+
+    j = 0
+    value = 0
+    z0_trac_sub_block_b = []
+    gamma_trac_sub_block_b = []
+    for i in range(0, len(blocks_sum)):
+        while value < blocks_sum[i]:
+            value += trac_sub_blocks_b[j]
+            z0_trac_sub_block_b.append(z0_trac_block[i])
+            gamma_trac_sub_block_b.append(gamma_trac_block[i])
+            j += 1
+    gamma_trac_sub_block_b = np.array(gamma_trac_sub_block_b)
+    z0_trac_sub_block_b = np.array(z0_trac_sub_block_b)
+
+    # Set up equivalent-pi parameters
+    ye_trac_a = 1 / (z0_trac_sub_block_a * np.sinh(gamma_trac_sub_block_a * trac_sub_blocks_a))  # Series admittance for traction return rail
+    ye_trac_b = 1 / (z0_trac_sub_block_b * np.sinh(gamma_trac_sub_block_b * trac_sub_blocks_b))
+    yg_trac = (np.cosh(gamma_trac_block * blocks) - 1) * (1 / (z0_trac_block * np.sinh(gamma_trac_block * blocks)))  # Parallel admittance for traction return rail
+
+    ye_sig_a = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_a))  # Series admittance for signalling rail
+    ye_sig_b = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_b))
+    yg_sig = (np.cosh(gamma_sig * blocks) - 1) * (1 / (z0_sig * np.sinh(gamma_sig * blocks)))  # Parallel admittance for signalling rail
+    yg_trac_comb = np.empty(len(yg_trac) + 1)
+    yg_trac_comb[0] = yg_trac[0]
+    yg_trac_comb[1:-1] = yg_trac[:-1] + yg_trac[1:]
+    yg_trac_comb[-1] = yg_trac[-1]
 
     # Calculate numbers of nodes ready to use in indexing
     n_nodes_a = len(trac_sub_block_sum_a) + len(sig_sub_block_sum_a)  # Number of nodes in direction of travel a
@@ -324,37 +353,39 @@ def rail_model_two_track_e_parallel_939(leakage, resistance, e_parallel, axle_po
     return i_relays_a, i_relays_b
 
 
-def rail_model_two_track_e_parallel_966(leakage, resistance, e_parallel, axle_pos_a, axle_pos_b):
+def rail_model_two_track_e_parallel_leak_966_block(leakage, resistance, e_parallel, axle_pos_a, axle_pos_b):
     # Create dictionary of network parameters
     parameters = {"z_sig": resistance,  # Signalling rail series impedance (ohms/km)
                   "z_trac": resistance,  # Traction return rail series impedance (ohms/km)
                   "y_sig": 0.1,  # Signalling rail parallel admittance for moderate conditions (siemens/km)
-                  "y_trac": leakage,  # Traction return rail parallel admittance in moderate conditions (siemens/km)
                   "v_power": 10,  # Track circuit power supply voltage (volts)
                   "r_power": 7.2,  # Track circuit power supply resistance (ohms)
                   "r_relay": 9,  # Track circuit relay resistance (ohms)
                   "r_cb": 1e-3,  # Cross bond resistance (ohms)
-                  "r_axle": 156e-3,  # Axle resistance (ohms)
+                  "r_axle": 251e-4,  # Axle resistance (ohms)
                   "i_power": 10 / 7.2,  # Track circuit power supply equivalent current source (amps)
                   "y_power": 1 / 7.2,  # Track circuit power supply admittance (siemens)
                   "y_relay": 1 / 9,  # Track circuit relay admittance (siemens)
                   "y_cb": 1 / 1e-3,  # Cross bond admittance (siemens)
-                  "y_axle": 640}  # Axle admittance (siemens)
-
-    # Calculate the electrical characteristics of the rails
-    gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig"])
-    gamma_trac = np.sqrt(parameters["z_trac"] * parameters["y_trac"])
-    z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig"])
-    z0_trac = np.sqrt(parameters["z_trac"] / parameters["y_trac"])
+                  "y_axle": 1 / 251e-4}  # Axle admittance (siemens)
 
     # Load in the lengths and bearings of the track circuit blocks
     # Note: zero degrees is directly northwards, with positive values increasing clockwise
     blocks = np.full(201, 0.68)
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
+    y_trac_block = np.full(len(blocks), 1.6)
+    y_trac_block[100] = leakage
+
+    # Calculate the electrical characteristics of the rails
+    gamma_sig = np.sqrt(parameters["z_sig"] * parameters["y_sig"])
+    gamma_trac_block = np.sqrt(parameters["z_trac"] * y_trac_block).flatten()
+    z0_sig = np.sqrt(parameters["z_sig"] / parameters["y_sig"])
+    z0_trac_block = np.sqrt(parameters["z_trac"] / y_trac_block).flatten()
+
     # Add cross bonds and axles which split the blocks into sub blocks
     # Note: "a" and "b" are used to identify the opposite directions of travel in this network (two-track)
-    pos_cb = np.arange(0.4001, np.sum(blocks), 0.4)  # Position of the cross bonds
+    pos_cb = np.arange(0.40001, np.sum(blocks), 0.4)  # Position of the cross bonds
     trac_sub_block_sum_a = np.sort(np.insert(np.concatenate((blocks_sum, pos_cb, axle_pos_a)), 0, 0))  # Traction return rail connects to axles and cross bonds
     sig_sub_block_sum_a = np.sort(np.insert(np.concatenate((blocks_sum, blocks_sum[:-1], axle_pos_a)), 0, 0))  # Signalling rail connects to axles, but need to add points on either side or IRJ
     trac_sub_block_sum_b = np.sort(np.insert(np.concatenate((blocks_sum, pos_cb, axle_pos_b)), 0, 0))
@@ -372,17 +403,45 @@ def rail_model_two_track_e_parallel_966(leakage, resistance, e_parallel, axle_po
     else:
         pass
 
-        # Set up equivalent-pi parameters
-        ye_trac_a = 1 / (z0_trac * np.sinh(gamma_trac * trac_sub_blocks_a))  # Series admittance for traction return rail
-        ye_sig_a = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_a))  # Series admittance for signalling rail
-        ye_trac_b = 1 / (z0_trac * np.sinh(gamma_trac * trac_sub_blocks_b))
-        ye_sig_b = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_b))
-        yg_trac = (np.cosh(gamma_trac * blocks) - 1) * (1 / (z0_trac * np.sinh(gamma_trac * blocks)))  # Parallel admittance for traction return rail
-        yg_sig = (np.cosh(gamma_sig * blocks) - 1) * (1 / (z0_sig * np.sinh(gamma_sig * blocks)))  # Parallel admittance for signalling rail
-        yg_trac_comb = np.empty(len(yg_trac) + 1)
-        yg_trac_comb[0] = yg_trac[0]
-        yg_trac_comb[1:-1] = yg_trac[:-1] + yg_trac[1:]
-        yg_trac_comb[-1] = yg_trac[-1]
+    # Set sub block value for z0 and gamma
+    j = 0
+    value = 0
+    z0_trac_sub_block_a = []
+    gamma_trac_sub_block_a = []
+    for i in range(0, len(blocks_sum)):
+        while value < blocks_sum[i]:
+            value += trac_sub_blocks_a[j]
+            z0_trac_sub_block_a.append(z0_trac_block[i])
+            gamma_trac_sub_block_a.append(gamma_trac_block[i])
+            j += 1
+    gamma_trac_sub_block_a = np.array(gamma_trac_sub_block_a)
+    z0_trac_sub_block_a = np.array(z0_trac_sub_block_a)
+
+    j = 0
+    value = 0
+    z0_trac_sub_block_b = []
+    gamma_trac_sub_block_b = []
+    for i in range(0, len(blocks_sum)):
+        while value < blocks_sum[i]:
+            value += trac_sub_blocks_b[j]
+            z0_trac_sub_block_b.append(z0_trac_block[i])
+            gamma_trac_sub_block_b.append(gamma_trac_block[i])
+            j += 1
+    gamma_trac_sub_block_b = np.array(gamma_trac_sub_block_b)
+    z0_trac_sub_block_b = np.array(z0_trac_sub_block_b)
+
+    # Set up equivalent-pi parameters
+    ye_trac_a = 1 / (z0_trac_sub_block_a * np.sinh(gamma_trac_sub_block_a * trac_sub_blocks_a))  # Series admittance for traction return rail
+    ye_trac_b = 1 / (z0_trac_sub_block_b * np.sinh(gamma_trac_sub_block_b * trac_sub_blocks_b))
+    yg_trac = (np.cosh(gamma_trac_block * blocks) - 1) * (1 / (z0_trac_block * np.sinh(gamma_trac_block * blocks)))  # Parallel admittance for traction return rail
+
+    ye_sig_a = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_a))  # Series admittance for signalling rail
+    ye_sig_b = 1 / (z0_sig * np.sinh(gamma_sig * sig_sub_blocks_b))
+    yg_sig = (np.cosh(gamma_sig * blocks) - 1) * (1 / (z0_sig * np.sinh(gamma_sig * blocks)))  # Parallel admittance for signalling rail
+    yg_trac_comb = np.empty(len(yg_trac) + 1)
+    yg_trac_comb[0] = yg_trac[0]
+    yg_trac_comb[1:-1] = yg_trac[:-1] + yg_trac[1:]
+    yg_trac_comb[-1] = yg_trac[-1]
 
     # Calculate numbers of nodes ready to use in indexing
     n_nodes_a = len(trac_sub_block_sum_a) + len(sig_sub_block_sum_a)  # Number of nodes in direction of travel a
@@ -651,63 +710,52 @@ def plot_leak_dif_rs():
     ax0 = fig.add_subplot(gs[:, 0])
     ax1 = fig.add_subplot(gs[:, 1])
 
-    fig2 = plt.figure(figsize=(14, 8))
-    gs2 = GridSpec(1, 1)
-    ax10 = fig2.add_subplot(gs2[0])
-
     res = 0.0289
     leak = [8.29, 4.14, 2.46, 1.06, 0.53, 0.265]
     e_all = np.arange(-20, 20.1, 0.01)
     thresh939 = np.empty(len(leak))
     thresh966 = np.empty(len(leak))
+    lines = []
+    labels = []
     for i in range(0, len(leak)):
-        ia939, ib939 = rail_model_two_track_e_parallel_939(leakage=leak[i], resistance=res, e_parallel=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-        ia966, ib966 = rail_model_two_track_e_parallel_966(leakage=leak[i], resistance=res, e_parallel=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-        ax0.plot(e_all, ia939[:, 100], label=f'Leakage = {leak[i]} S/km')
-        thresh939[i] = e_all[np.where(ia939[:, 100] < 0.055)[0][0]]
-        ax1.plot(e_all, ia966[:, 100], label=f'Leakage = {leak[i]} S/km')
-        thresh966[i] = e_all[np.where(ia966[:, 100] < 0.081)[0][0]]
+        ia939, ib939 = rail_model_two_track_e_parallel_leak_939_block(leakage=leak[i], resistance=res, e_parallel=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+        ia966, ib966 = rail_model_two_track_e_parallel_leak_966_block(leakage=leak[i], resistance=res, e_parallel=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+        line, = ax0.plot(e_all, ia939[:, 100])
+        ax1.plot(e_all, ia966[:, 100])
+        lines.append(line)
+        labels.append(f'Leakage = {leak[i]} S/km')
 
-    ax10.plot(leak, thresh939, ".-", label="BR939A Relay")
-    ax10.plot(leak, thresh966, ".-", label="BR966 F2 Relay")
-    ax10.set_xlabel("Leakage (S/km)")
-    ax10.set_ylabel("Misoperation Threshold Electric Field Strength (V/km)")
-    ax10.legend()
-
-    ax0.legend()
     ax0.set_xlabel("Electric Field Strength (V/km)")
     ax0.set_ylabel("Current Through Relay (A)")
     ax0.axhline(0.055, color="red", linestyle="-")
-    min_thresh939 = np.min(thresh939)
-    max_thresh939 = np.max(thresh939)
-    #ax0.axvline(min_thresh939, color='gray', linestyle='-')
-    #ax0.axvline(max_thresh939, color='gray', linestyle='--')
-    ax0.set_xlim(9.25, 10.5)
-    ax0.set_ylim(0.02, 0.14)
+    ax0.set_xlim(9.52, 9.64)
+    ax0.set_ylim(0.053, 0.057)
     ax0.set_title(f"BR939A Relay")
 
-    #ax1.legend()
     ax1.set_xlabel("Electric Field Strength (V/km)")
     #ax1.set_ylabel("Current Through Relay (A)")
-    #ax1.set_yticks([])
     ax1.axhline(0.081, color="red", linestyle="-")
     min_thresh966 = np.min(thresh966)
     max_thresh966 = np.max(thresh966)
-    #ax1.axvline(min_thresh966, color='gray', linestyle='-')
-    #ax1.axvline(max_thresh966, color='gray', linestyle='--')
-    ax1.set_xlim(9.75, 10.75)
-    ax1.set_ylim(0.02, 0.14)
+    ax1.axvline(min_thresh966, color='gray', linestyle='-')
+    ax1.axvline(max_thresh966, color='gray', linestyle='--')
+    ax1.set_xlim(9.94, 10.02)
+    ax1.set_ylim(0.079, 0.083)
     ax1.set_title(f"BR966 F2 Relay")
 
     #gs.update(wspace=0.01)
+    ax0.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax1.get_yaxis().get_major_formatter().set_useOffset(False)
+
+    fig.legend(lines, labels, loc='lower center', fancybox=True, shadow=True, ncol=4)
 
     #plt.savefig("leakage_rs.pdf")
     plt.show()
 
 
-def plot_leak_rs_single():
+def plot_leak_rs_current():
     plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(10, 8))
+    fig = plt.figure(figsize=(14, 8))
     gs = GridSpec(2, 2)
     ax0 = fig.add_subplot(gs[0, 0])
     ax1 = fig.add_subplot(gs[0, 1])
@@ -723,45 +771,45 @@ def plot_leak_rs_single():
         leaks966 = np.empty(len(leak))
         for i in range(0, len(leak)):
             print(i)
-            ia9390, ib9390 = rail_model_two_track_e_parallel_939(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-            ia939, ib939 = rail_model_two_track_e_parallel_939(leakage=leak[i], resistance=0.0289,
+            ia9390, ib9390 = rail_model_two_track_e_parallel_leak_939_block(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+            ia939, ib939 = rail_model_two_track_e_parallel_leak_939_block(leakage=leak[i], resistance=0.0289,
                                                                     e_parallel=np.array([10]), axle_pos_a=np.array([]),
                                                                     axle_pos_b=np.array([]))
             leaks9390[i] = ia9390[0, 100]
             leaks939[i] = ia939[0, 100]
-            ia9660, ib9660 = rail_model_two_track_e_parallel_966(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-            ia966, ib966 = rail_model_two_track_e_parallel_966(leakage=leak[i], resistance=0.0289,
+            ia9660, ib9660 = rail_model_two_track_e_parallel_leak_966_block(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
+            ia966, ib966 = rail_model_two_track_e_parallel_leak_966_block(leakage=leak[i], resistance=0.0289,
                                                                     e_parallel=np.array([10]), axle_pos_a=np.array([]),
                                                                     axle_pos_b=np.array([]))
             leaks9660[i] = ia9660[0, 100]
             leaks966[i] = ia966[0, 100]
 
-        np.save("leaks9390.npy", leaks9390)
-        np.save("leaks939.npy", leaks939)
-        np.save("leaks9660.npy", leaks9660)
-        np.save("leaks966.npy", leaks966)
+        np.save("leaks9390_block.npy", leaks9390)
+        np.save("leaks939_block.npy", leaks939)
+        np.save("leaks9660_block.npy", leaks9660)
+        np.save("leaks966_block.npy", leaks966)
 
     #save()
 
-    leaks9390 = np.load("leaks9390.npy")
-    leaks939 = np.load("leaks939.npy")
-    leaks9660 = np.load("leaks9660.npy")
-    leaks966 = np.load("leaks966.npy")
+    leaks9390 = np.load("leaks9390_block.npy")
+    leaks939 = np.load("leaks939_block.npy")
+    leaks9660 = np.load("leaks9660_block.npy")
+    leaks966 = np.load("leaks966_block.npy")
 
     ax0.plot(leak, leaks9390, label="BR939A Relay", color='tomato')
     ax0.set_ylabel("Current Through Relay (A)")
     ax0.set_title(f"E = 0 V/km")
-    ax0.set_ylim(0.269, 0.295)
+    ax0.set_ylim(0.2733, 0.2747)
     ax0.set_xlim(0, 8.34)
-    ax0.set_yticks([0.27, 0.28, 0.29])
+    ax0.set_yticks([0.2735, 0.2740, 0.2745])
     ax0.set_xticks([2, 4, 6, 8])
     ax0.legend()
     ax0.grid(color="grey", alpha=0.5)
 
     ax1.plot(leak, leaks939, label="BR939A Relay", color='tomato')
     ax1.set_title(f"E = -10 V/km")
-    ax1.set_ylim(0.039, 0.065)
-    ax1.set_yticks([0.04, 0.05, 0.06])
+    ax1.set_ylim(0.0447, 0.0461)
+    ax1.set_yticks([0.0450, 0.0455, 0.0460])
     ax1.set_xlim(0, 8.34)
     ax1.set_xticks([2, 4, 6, 8])
     ax1.legend()
@@ -770,8 +818,8 @@ def plot_leak_rs_single():
     ax2.plot(leak, leaks9660, label="BR966 F2 Relay", color='steelblue')
     ax2.set_xlabel("Leakage (S/km)")
     ax2.set_ylabel("Current Through Relay (A)")
-    ax2.set_ylim(0.48, 0.518)
-    ax2.set_yticks([0.48, 0.49, 0.50, 0.51])
+    ax2.set_ylim(0.4893, 0.4913)
+    ax2.set_yticks([0.4895, 0.4900, 0.4905, 0.4910])
     ax2.set_xlim(0, 8.34)
     ax2.set_xticks([0, 2, 4, 6, 8])
     ax2.legend()
@@ -779,14 +827,19 @@ def plot_leak_rs_single():
 
     ax3.plot(leak, leaks966, label="BR966 F2 Relay", color='steelblue')
     ax3.set_xlabel("Leakage (S/km)")
-    ax3.set_ylim(0.075, 0.107)
-    ax3.set_yticks([0.07, 0.08, 0.09, 0.1])
+    ax3.set_ylim(0.0789, 0.0809)
+    ax3.set_yticks([0.0790, 0.0795, 0.0800, 0.0805])
     ax3.set_xlim(0, 8.34)
     ax3.set_xticks([0, 2, 4, 6, 8])
     ax3.legend()
     ax3.grid(color="grey", alpha=0.5)
 
     gs.update(hspace=0)
+
+    ax0.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax1.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax2.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax3.get_yaxis().get_major_formatter().set_useOffset(False)
 
     # plt.savefig("leakage_rs.pdf")
     plt.show()
@@ -795,50 +848,64 @@ def plot_leak_rs_single():
 def plot_leak_dif_ws():
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(14, 8))
-    gs = GridSpec(1, 2)
-    ax0 = fig.add_subplot(gs[:, 0])
-    ax1 = fig.add_subplot(gs[:, 1])
+    gs = GridSpec(2, 2)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[1, 1])
 
     leak = [8.29, 4.14, 2.46, 1.06, 0.53, 0.265]
     e_all = np.arange(-20, 20.1, 0.01)
-    thresh939 = np.empty(len(leak))
-    thresh966 = np.empty(len(leak))
+    lines = []
+    labels = []
     for i in range(0, len(leak)):
-        ia939, ib939 = rail_model_two_track_e_parallel_939(leakage=leak[i], resistance=0.0289, e_parallel=e_all, axle_pos_a=np.array([68.67]), axle_pos_b=np.array([]))
-        ia966, ib966 = rail_model_two_track_e_parallel_966(leakage=leak[i], resistance=0.0289, e_parallel=e_all, axle_pos_a=np.array([68.67]), axle_pos_b=np.array([]))
-        ax0.plot(e_all, ia939[:, 100], label=f'Leakage = {leak[i]} S/km')
-        thresh939[i] = e_all[np.where(ia939[:, 100] < 0.055)[0][0]]
-        ax1.plot(e_all, ia966[:, 100], label=f'Leakage = {leak[i]} S/km')
-        thresh966[i] = e_all[np.where(ia966[:, 100] < 0.081)[0][0]]
-    ax0.legend()
-    ax0.set_xlabel("Electric Field Strength (V/km)")
+        ia939, ib939 = rail_model_two_track_e_parallel_leak_939_block(leakage=leak[i], resistance=0.0289, e_parallel=e_all, axle_pos_a=np.array([68.67]), axle_pos_b=np.array([]))
+        ia966, ib966 = rail_model_two_track_e_parallel_leak_966_block(leakage=leak[i], resistance=0.0289, e_parallel=e_all, axle_pos_a=np.array([68.67]), axle_pos_b=np.array([]))
+        line, = ax0.plot(e_all, ia939[:, 100])
+        ax1.plot(e_all, ia966[:, 100])
+        ax2.plot(e_all, ia939[:, 100])
+        ax3.plot(e_all, ia966[:, 100])
+        labels.append(f'Leakage = {leak[i]} S/km')
+        lines.append(line)
+
     ax0.set_ylabel("Current Through Relay (A)")
-    ax0.axhline(0.081, color="green", linestyle="-")
-    min_thresh939 = np.min(thresh939)
-    max_thresh939 = np.max(thresh939)
-    ax0.axvline(min_thresh939, color='gray', linestyle='-')
-    ax0.axvline(max_thresh939, color='gray', linestyle='--')
-    #ax0.set_xlim(5.4, 7.2)
-    #ax0.set_ylim(0, 0.12)
+    ax0.axhline(0.081, color="limegreen", linestyle="--")
+    ax0.set_xlim(-2.366885, -2.366240)
+    ax0.set_ylim(0.08098193, 0.08101807)
     ax0.set_title(f"BR939A Relay")
 
-    ax1.legend()
-    ax1.set_xlabel("Electric Field Strength (V/km)")
-    ax1.set_ylabel("Current Through Relay (A)")
-    ax1.axhline(0.12, color="green", linestyle="-")
-    min_thresh966 = np.min(thresh966)
-    max_thresh966 = np.max(thresh966)
-    ax1.axvline(min_thresh966, color='gray', linestyle='-')
-    ax1.axvline(max_thresh966, color='gray', linestyle='--')
-    #ax1.set_xlim(5.8, 7)
-    #ax1.set_ylim(0.02, 0.18)
+    ax1.axhline(0.12, color="limegreen", linestyle="--")
+    ax1.set_xlim(-1.560374, -1.559674)
+    ax1.set_ylim(0.1199583, 0.1200417)
     ax1.set_title(f"BR966 F2 Relay")
+
+    ax2.set_xlabel("Electric Field Strength (V/km)")
+    ax2.set_ylabel("Current Through Relay (A)")
+    ax2.axhline(-0.081, color="limegreen", linestyle="--")
+    #x2.set_xlim(-2.366885, -2.366240)
+    #ax2.set_ylim(0.08098193, 0.08101807)
+
+    ax3.set_xlabel("Electric Field Strength (V/km)")
+    ax3.axhline(-0.12, color="limegreen", linestyle="--")
+    #ax3.set_xlim(-1.560374, -1.559674)
+    #ax3.set_ylim(0.1199583, 0.1200417)
+
+    ax0.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax1.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax0.get_xaxis().get_major_formatter().set_useOffset(False)
+    ax1.get_xaxis().get_major_formatter().set_useOffset(False)
+    ax2.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax3.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax2.get_xaxis().get_major_formatter().set_useOffset(False)
+    ax3.get_xaxis().get_major_formatter().set_useOffset(False)
+
+    fig.legend(lines, labels, loc='lower center', fancybox=True, shadow=True, ncol=4)
 
     #plt.savefig("leakage_rs.pdf")
     plt.show()
 
 
-def plot_leak_ws_single():
+def plot_leak_ws_current():
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(10, 8))
     gs = GridSpec(2, 2)
@@ -856,26 +923,26 @@ def plot_leak_ws_single():
         leaks966 = np.empty(len(leak))
         for i in range(0, len(leak)):
             print(i)
-            ia9390, ib9390 = rail_model_two_track_e_parallel_939(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
-            ia939, ib939 = rail_model_two_track_e_parallel_939(leakage=leak[i], resistance=0.0289, e_parallel=np.array([-10]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
+            ia9390, ib9390 = rail_model_two_track_e_parallel_leak_939_block(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
+            ia939, ib939 = rail_model_two_track_e_parallel_leak_939_block(leakage=leak[i], resistance=0.0289, e_parallel=np.array([-10]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
             leaks9390[i] = ia9390[0, 100]
             leaks939[i] = ia939[0, 100]
-            ia9660, ib9660 = rail_model_two_track_e_parallel_966(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
-            ia966, ib966 = rail_model_two_track_e_parallel_966(leakage=leak[i], resistance=0.0289, e_parallel=np.array([-10]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
+            ia9660, ib9660 = rail_model_two_track_e_parallel_leak_966_block(leakage=leak[i], resistance=0.0289, e_parallel=np.array([0]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
+            ia966, ib966 = rail_model_two_track_e_parallel_leak_966_block(leakage=leak[i], resistance=0.0289, e_parallel=np.array([-10]), axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
             leaks9660[i] = ia9660[0, 100]
             leaks966[i] = ia966[0, 100]
 
-        np.save("leaks9390ws.npy", leaks9390)
-        np.save("leaks939ws.npy", leaks939)
-        np.save("leaks9660ws.npy", leaks9660)
-        np.save("leaks966ws.npy", leaks966)
+        np.save("leaks9390ws_block.npy", leaks9390)
+        np.save("leaks939ws_block.npy", leaks939)
+        np.save("leaks9660ws_block.npy", leaks9660)
+        np.save("leaks966ws_block.npy", leaks966)
 
-    save()
+    #save()
 
-    leaks9390 = np.load("leaks9390ws.npy")
-    leaks939 = np.load("leaks939ws.npy")
-    leaks9660 = np.load("leaks9660ws.npy")
-    leaks966 = np.load("leaks966ws.npy")
+    leaks9390 = np.load("leaks9390ws_block.npy")
+    leaks939 = np.load("leaks939ws_block.npy")
+    leaks9660 = np.load("leaks9660ws_block.npy")
+    leaks966 = np.load("leaks966ws_block.npy")
 
     ax0.plot(leak, leaks9390, label="BR939A Relay", color='tomato')
     ax0.set_ylabel("Current Through Relay (A)")
@@ -917,208 +984,17 @@ def plot_leak_ws_single():
 
     gs.update(hspace=0)
 
+    ax0.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax1.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax2.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax3.get_yaxis().get_major_formatter().set_useOffset(False)
+
     # plt.savefig("leakage_ws.pdf")
-    plt.show()
-
-
-def plot_res_rs():
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(14, 8))
-    gs = GridSpec(1, 2)
-    ax0 = fig.add_subplot(gs[:, 0])
-    ax1 = fig.add_subplot(gs[:, 1])
-
-    res = [0.25, 0.035, 0.0289]
-    e_all = np.arange(-20, 20.1, 0.01)
-    lines = []
-    labels = []
-    for i in range(0, len(res)):
-        ia939, ib939 = rail_model_two_track_e_parallel_939(leakage=1.6, resistance=res[i], e_parallel=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-        ia966, ib966 = rail_model_two_track_e_parallel_966(leakage=1.6, resistance=res[i], e_parallel=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-        line, = ax0.plot(e_all, ia939[:, 100])
-        ax1.plot(e_all, ia966[:, 100])
-        lines.append(line)
-        labels.append(f'Leakage = {res[i]} ohm/km')
-
-    ax0.set_xlabel("Electric Field Strength (V/km)")
-    ax0.set_ylabel("Current Through Relay (A)")
-    ax0.axhline(0.055, color="red", linestyle="-")
-    ax0.axhline(-0.055, color="red", linestyle="-")
-    ax0.set_title(f"BR939A Relay")
-    ax0.set_xlim(9.56, 9.60)
-    ax0.set_ylim(0.054, 0.056)
-
-    ax1.set_xlabel("Electric Field Strength (V/km)")
-    #ax1.set_ylabel("Current Through Relay (A)")
-    ax1.axhline(0.081, color="red", linestyle="-")
-    ax1.axhline(-0.081, color="red", linestyle="-")
-    ax1.set_title(f"BR966 F2 Relay")
-    ax1.set_xlim(9.95, 9.99)
-    ax1.set_ylim(0.080, 0.082)
-
-    fig.legend(lines, labels, loc='lower center', fancybox=True, shadow=True, ncol=4)
-
-    #plt.savefig("leakage_rs.pdf")
-    plt.show()
-
-
-def plot_res_ws():
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(14, 8))
-    gs = GridSpec(2, 2)
-    ax0 = fig.add_subplot(gs[0, 0])
-    ax1 = fig.add_subplot(gs[0, 1])
-    ax2 = fig.add_subplot(gs[1, 0])
-    ax3 = fig.add_subplot(gs[1, 1])
-
-    res = [0.25, 0.035, 0.0289]
-    e_all = np.arange(-20, 20.1, 0.01)
-    lines = []
-    labels = []
-    for i in range(0, len(res)):
-        ia939, ib939 = rail_model_two_track_e_parallel_939(leakage=1.6, resistance=res[i], e_parallel=e_all, axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
-        ia966, ib966 = rail_model_two_track_e_parallel_966(leakage=1.6, resistance=res[i], e_parallel=e_all, axle_pos_a=np.array([68.34]), axle_pos_b=np.array([]))
-        line, = ax0.plot(e_all, ia939[:, 100])
-        ax1.plot(e_all, ia966[:, 100])
-        ax2.plot(e_all, ia939[:, 100])
-        ax3.plot(e_all, ia966[:, 100])
-        lines.append(line,)
-        labels.append(f'Resistivity = {res[i]} ohm/km')
-
-    #ax0.set_xlabel("Electric Field Strength (V/km)")
-    ax0.set_ylabel("Current Through Relay (A)")
-    ax0.axhline(0.081, color="limegreen", linestyle="--")
-    ax0.axhline(-0.081, color="limegreen", linestyle="--")
-    ax0.set_title(f"BR939A Relay")
-
-    #ax1.legend()
-    #ax1.set_xlabel("Electric Field Strength (V/km)")
-    #ax1.set_ylabel("Current Through Relay (A)")
-    ax1.axhline(0.120, color="limegreen", linestyle="--")
-    ax1.axhline(-0.120, color="limegreen", linestyle="--")
-    ax1.set_title(f"BR966 F2 Relay")
-
-    #ax2.legend()
-    ax2.set_xlabel("Electric Field Strength (V/km)")
-    ax2.set_ylabel("Current Through Relay (A)")
-    ax2.axhline(0.081, color="limegreen", linestyle="--")
-    ax2.axhline(-0.081, color="limegreen", linestyle="--")
-
-    #ax3.legend()
-    ax3.set_xlabel("Electric Field Strength (V/km)")
-    #ax3.set_ylabel("Current Through Relay (A)")
-    ax3.axhline(0.120, color="limegreen", linestyle="--")
-    ax3.axhline(-0.120, color="limegreen", linestyle="--")
-
-    fig.legend(lines, labels, loc='lower center', fancybox=True, shadow=True, ncol=4)
-
-    #plt.savefig("leakage_ws.pdf")
-    plt.show()
-
-
-def plot_res_ws_range():
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(14, 7))
-    gs = GridSpec(1, 2)
-    ax0 = fig.add_subplot(gs[:, 0])
-    ax1 = fig.add_subplot(gs[:, 1])
-
-    res = np.linspace(0.0289, 0.25, 10)
-    ia939_all = np.zeros(len(res))
-    ia966_all = np.zeros(len(res))
-    for i in range(0, len(res)):
-        print(i)
-        ia939, ib939 = rail_model_two_track_e_parallel_res_939(resistance=res[i], e_parallel=np.array([0]), axle_pos_a=np.array([68.68]), axle_pos_b=np.array([]))
-        ia966, ib966 = rail_model_two_track_e_parallel_res_966(resistance=res[i], e_parallel=np.array([0]), axle_pos_a=np.array([68.68]), axle_pos_b=np.array([]))
-        ia939_all[i] = ia939[:, 100]
-        ia966_all[i] = ia966[:, 100]
-
-    ax0.plot(res, ia939_all)
-    ax1.plot(res, ia966_all)
-
-    ax0.set_xlabel("Resistivity (ohm/km)")
-    ax0.set_ylabel("Current Through Relay (A)")
-    #ax0.set_xlim(5.4, 7.2)
-    #ax0.set_ylim(0, 0.12)
-    ax0.set_title(f"BR939A Relay")
-
-    ax1.set_xlabel("Resistivity (ohm/km)")
-    ax1.set_ylabel("Current Through Relay (A)")
-    #ax1.set_xlim(5.8, 7)
-    #ax1.set_ylim(0.02, 0.18)
-    ax1.set_title(f"BR966 F2 Relay")
-
-    #plt.savefig("leakage_rs.pdf")
-    plt.show()
-
-
-def plot_res_ws_new():
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(18, 8))
-    gs = GridSpec(2, 3)
-    ax0 = fig.add_subplot(gs[0, 0])
-    ax1 = fig.add_subplot(gs[1, 0])
-    ax2 = fig.add_subplot(gs[0, 1])
-    ax3 = fig.add_subplot(gs[1, 1])
-    ax4 = fig.add_subplot(gs[0, 2])
-    ax5 = fig.add_subplot(gs[1, 2])
-
-    res = np.linspace(0.0289, 0.25, 10)
-    ia939_all = np.zeros(len(res))
-    vtopa_all = np.zeros(len(res))
-    vbottoma_all = np.zeros(len(res))
-    ia939e_all = np.zeros(len(res))
-    vtopae_all = np.zeros(len(res))
-    vbottomae_all = np.zeros(len(res))
-
-    for i in range(0, len(res)):
-        print(i)
-        ia939, ib939, vtopa, vbottoma = rail_model_two_track_e_parallel_res_939_change_y_axle(resistance=res[i], y_axle=1/251e-4, e_parallel=np.array([0]), axle_pos_a=np.array([68.68]), axle_pos_b=np.array([]))
-        ia939e, ib939e, vtopae, vbottomae = rail_model_two_track_e_parallel_res_939_change_y_axle(resistance=res[i], y_axle=1/251e-4, e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
-        ia939_all[i] = ia939[:, 100]
-        vtopa_all[i] = vtopa[100, 0]
-        ia939e_all[i] = ia939e[:, 100]
-        vtopae_all[i] = vtopae[100, 0]
-        vbottomae_all[i] = vbottomae[100, 0]
-
-    ax1.plot(res, vtopa_all, '^-', label='Signal Rail')
-    ax1.plot(res, vbottoma_all, 'v-', label='Traction Rail')
-    ax1.set_xlabel("Rail Resistance (ohm/km)")
-    ax1.set_ylabel("Voltage at Relay Node (V)")
-    ax1.legend()
-
-    ax0.plot(res, vtopae_all, '^-', label='Signal Rail')
-    ax0.plot(res, vbottomae_all, 'v-', label='Traction Rail')
-    ax0.set_xlabel("Rail Resistance (ohm/km)")
-    ax0.set_ylabel("Voltage at Relay Node (V)")
-    ax0.legend()
-
-    ax3.plot(res, vtopa_all - vbottoma_all, '.-')
-    ax3.set_xlabel("Rail Resistance (ohm/km)")
-    ax3.set_ylabel("Potential Difference Across Relay (V)")
-
-    ax2.plot(res, vtopae_all - vbottomae_all, '.-')
-    ax2.set_xlabel("Rail Resistance (ohm/km)")
-    ax2.set_ylabel("Potential Difference Across Relay (V)")
-
-    ax5.plot(res, (vtopa_all - vbottoma_all)/20, '.-')
-    ax5.axhline(0.081, color='limegreen')
-    ax5.set_xlabel("Rail Resistance (ohm/km)")
-    ax5.set_ylabel("Current Through Relay (V)")
-
-    ax4.plot(res, (vtopae_all - vbottomae_all)/20, '.-')
-    ax4.axhline(0.055, color='tomato')
-    ax4.set_xlabel("Rail Resistance (ohm/km)")
-    ax4.set_ylabel("Current Through Relay (V)")
 
     plt.show()
 
 
 #plot_leak_dif_rs()
-#plot_leak_rs_single()
-#plot_leak_dif_ws()
-#plot_leak_ws_single()
-
-#plot_res_rs()
-plot_res_ws()
-#plot_res_ws_new()
+#plot_leak_rs_current()
+plot_leak_dif_ws()
+#plot_leak_ws_current()

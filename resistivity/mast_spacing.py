@@ -293,10 +293,6 @@ def res_leak_comb(route_name):
     elif route_name == "east_coast_main_line":
         fig.suptitle("East Coast Main Line")
         tick_spacing = 100
-        boundaries = np.array([66.5, 107.5, 128.5, 323.5, 427.5, 593.5, 658.5, 707.5, 739.5])
-        for b in boundaries:
-            ax0.axvline(b, color="gray", alpha=0.25)
-            ax1.axvline(b, color="gray", alpha=0.25)
     elif route_name == "west_coast_main_line":
         fig.suptitle("West Coast Main Line")
         tick_spacing = 100
@@ -310,17 +306,17 @@ def res_leak_comb(route_name):
     ax1.set_xlabel("Block Index")
     ax1.set_ylabel(r"Leakage ($\mathrm{S \cdot km^{-1}}$)")
 
-    #plt.savefig(f"res_leak_comb_{route_name}.pdf")
+    plt.savefig(f"res_leak_comb_{route_name}.pdf")
     plt.show()
 
 
-for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+#for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
     #split_path_by_distance_halved(name)
     #calculate_leakage_halved(name)
     #calculate_leakage(name)
     #plot_resistivity_along_line(name)
     #plot_block_leakage(name)
     #block_leakage_histogram(name)
-    res_leak_comb(name)
+    #res_leak_comb(name)
 
 

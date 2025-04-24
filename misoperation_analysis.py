@@ -27,7 +27,7 @@ def rail_model_two_track_e_blocks(section_name, ex_blocks, ey_blocks, axle_pos_a
 
     # Load in the lengths and bearings of the track circuit blocks
     # Note: zero degrees is directly northwards, with positive values increasing clockwise
-    data = np.load(f"../data/rail_data/{section_name}/{section_name}_distances_bearings.npz")
+    data = np.load(f"data/rail_data/{section_name}/{section_name}_distances_bearings.npz")
     blocks = data["distances"]
     bearings = data["bearings"]
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
@@ -388,7 +388,7 @@ def rail_model_two_track_e_parallel(section_name, e_parallel, axle_pos_a, axle_p
 
     # Load in the lengths and bearings of the track circuit blocks
     # Note: zero degrees is directly northwards, with positive values increasing clockwise
-    data = np.load(f"../data/rail_data/{section_name}/{section_name}_distances_bearings.npz")
+    data = np.load(f"data/rail_data/{section_name}/{section_name}_distances_bearings.npz")
     blocks = data["distances"]
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
@@ -684,11 +684,11 @@ def rail_model_two_track_e_parallel(section_name, e_parallel, axle_pos_a, axle_p
     return i_relays_a, i_relays_b
 
 
-#ia, ib = rail_model_two_track_e_blocks(section_name="test", ex_blocks=np.array([[0, 0], [0, 0], [0, 0]]), ey_blocks=np.array([[0, 0], [0, 0], [0, 0]]), axle_pos_a=np.array([2.11, 2.22]), axle_pos_b=np.array([2.11, 2.22]))
-#fig, ax = plt.subplots(2, 1)
-#ax[0].plot(ia[0], '.')
-#ax[1].plot(ib[0], '.')
-#plt.show()
+ia, ib = rail_model_two_track_e_blocks(section_name="test", ex_blocks=np.array([[0, 0], [0, 0], [0, 0]]), ey_blocks=np.array([[0, 0], [0, 0], [0, 0]]), axle_pos_a=np.array([2.11, 2.22]), axle_pos_b=np.array([2.11, 2.22]))
+fig, ax = plt.subplots(2, 1)
+ax[0].plot(ia[0], '.')
+ax[1].plot(ib[0], '.')
+plt.show()
 
 #ia, ib = rail_model_two_track_e_parallel(section_name="glasgow_edinburgh_falkirk", e_parallel=np.array([0]), axle_pos_a=np.array([]), axle_pos_b=np.array([]))
 #fig, ax = plt.subplots(2, 1)
