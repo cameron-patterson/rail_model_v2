@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 from matplotlib.gridspec import GridSpec
 
 
-def rail_model_two_track(ex_blocks, ey_blocks, axle_pos_a, axle_pos_b, relay_type, electrical_staggering, cross_bonds):
+def rail_model_two_track_test(resistance, e_par, axle_pos_a, axle_pos_b, relay_type, electrical_staggering, cross_bonds):
     # Define network parameters
-    z_sig = 0.0289  # Signalling rail series impedance (ohms/km)
-    z_trac = 0.0289  # Traction return rail series impedance (ohms/km)
+    z_sig = resistance  # Signalling rail series impedance (ohms/km)
+    z_trac = resistance  # Traction return rail series impedance (ohms/km)
     y_sig = 0.1  # Signalling rail parallel admittance for moderate conditions (siemens/km)
     i_power = 10 / 7.2  # Track circuit power supply equivalent current source (amps)
     y_power = 1 / 7.2  # Track circuit power supply admittance (siemens)
@@ -28,18 +29,15 @@ def rail_model_two_track(ex_blocks, ey_blocks, axle_pos_a, axle_pos_b, relay_typ
     bearings = np.full(201, 0)
     blocks_sum = np.cumsum(blocks)  # Cumulative sum of block lengths
 
-    print("PARALLEL. Overriding bearings")
-    bearings = np.full(len(bearings), 0)
-
-    # TO BE DELETED
-    print("DELETE LATER. Overriding E blocks")
-    ex_blocks = np.full((len(blocks), 2), [0, 10])
-    ey_blocks = np.full((len(blocks), 2), [0, 10])
+    # Override E blocks to assume parallel
+    print("Overriding ex_blocks and ey_blocks to assume parallel")
+    ex_blocks = np.full((len(blocks), len(e_par)), e_par)
+    ey_blocks = np.full((len(blocks), len(e_par)), e_par)
 
     # Load traction rail block leakages
     # y_trac_block = np.load(f"y_trac_block_{section_name}.npy")
-    print("Overriding y_trac_block")
-    y_trac_block = np.full(len(blocks), 1.6)
+    print("Overriding y_trac_block for constant traction rail leakage with only changes in the middle block")
+    y_trac_block = np.full(len(blocks), 0.783)
 
     # Calculate the electrical characteristics of the rails
     gamma_sig = np.sqrt(z_sig * y_sig)
@@ -426,164 +424,169 @@ def rail_model_two_track(ex_blocks, ey_blocks, axle_pos_a, axle_pos_b, relay_typ
     return i_relays_a, i_relays_b
 
 
-def plot():
-    axle_spacing = np.array([0, 2, 17.5, 19.5, 24, 26, 41.5, 43.5, 48, 50, 65.5, 67.5, 72, 74, 89.5, 91.5]) / 1000
-
+def plot_res_rs():
     plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(14, 8))
-    gs = GridSpec(2, 1)
-    ax0 = fig.add_subplot(gs[0])
-    ax1 = fig.add_subplot(gs[1])
+    fig = plt.figure(figsize=(14, 16))
+    gs = GridSpec(2, 2)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[1, 1])
 
-    es = True
-    ia, ib = rail_model_two_track(ex_blocks=[], ey_blocks=[], axle_pos_a=(68.34 + axle_spacing), axle_pos_b=[], relay_type="BR939A", electrical_staggering=es, cross_bonds=True)
-    x = np.arange(0, len(ia[0]))
-    occupied = [100]
-    occupied_pos = []
-    occupied_neg = []
-    unoccupied_pos = x[::2]
-    unoccupied_neg = x[1::2]
-    for occ in occupied:
-        if occ % 2 == 0:
-            occupied_pos.append(occ)
-            unoccupied_pos = np.delete(unoccupied_pos, np.where(unoccupied_pos == occ))
-        else:
-            occupied_neg.append(occ)
-            unoccupied_neg = np.delete(unoccupied_neg, np.where(unoccupied_neg == occ))
+    res = [0.25, 0.035, 0.0289]
+    e_all = np.arange(-20, 20.1, 0.01)
+    lines = []
+    labels = []
+    for i in range(0, len(res)):
+        ia939, ib939 = rail_model_two_track_test(resistance=res[i], e_par=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]), relay_type="BR939A", electrical_staggering=False, cross_bonds=True)
+        ia966, ib966 = rail_model_two_track_test(resistance=res[i], e_par=e_all, axle_pos_a=np.array([]), axle_pos_b=np.array([]), relay_type="BR966F2", electrical_staggering=False, cross_bonds=True)
+        line, = ax0.plot(e_all, ia939[:, 100])
+        ax1.plot(e_all, ia966[:, 100])
+        ax2.plot(e_all, ia939[:, 100])
+        ax3.plot(e_all, ia966[:, 100])
+        lines.append(line)
+        labels.append(f'Resistance = {res[i]} ohm/km')
 
-    ia_occupied_pos = ia[0][occupied_pos]
-    ia_occupied_neg = ia[0][occupied_neg]
-    ia_unoccupied_pos = ia[0][unoccupied_pos]
-    ia_unoccupied_neg = ia[0][unoccupied_neg]
+    ax0.set_ylabel("Current Through Relay (A)")
+    ax0.axhline(0.055, color="red", linestyle="-")
+    ax0.axhline(-0.055, color="red", linestyle="-")
+    ax0.set_title(f"BR939A Relay")
+    ax0.set_xlim(9.7, 9.82)
+    ax0.set_ylim(0.054, 0.056)
+    ax0.set_yticks([0.054, 0.055, 0.056])
 
-    ia_unoccupied_pos_mis_loc = np.array(unoccupied_pos)[np.where((ia_unoccupied_pos < 0.055) & (ia_unoccupied_pos > -0.081))]
-    ia_unoccupied_neg_mis_loc = np.array(unoccupied_neg)[np.where((ia_unoccupied_neg > -0.055) & (ia_unoccupied_neg < 0.081))]
-    ia_occupied_pos_mis_loc = np.array(occupied_pos)[np.where((ia_occupied_pos > 0.081) | (ia_occupied_pos < -0.081))]
-    ia_occupied_neg_mis_loc = np.array(occupied_neg)[np.where((ia_occupied_neg > 0.081) | (ia_occupied_neg < -0.081))]
-    ia_unoccupied_pos_ok_loc = np.delete(unoccupied_pos, np.where((ia_unoccupied_pos < 0.055) & (ia_unoccupied_pos > -0.081)))
-    ia_unoccupied_neg_ok_loc = np.delete(unoccupied_neg, np.where((ia_unoccupied_neg > -0.055) & (ia_unoccupied_neg < 0.081)))
-    ia_occupied_pos_ok_loc = np.delete(occupied_pos, np.where((ia_occupied_pos > 0.081) | (ia_occupied_pos < -0.081)))
-    ia_occupied_neg_ok_loc = np.delete(occupied_neg, np.where((ia_occupied_neg > 0.081) | (ia_occupied_neg < -0.081)))
+    ax1.axhline(0.081, color="red", linestyle="-")
+    ax1.axhline(-0.081, color="red", linestyle="-")
+    ax1.set_title(f"BR966 F2 Relay")
+    ax1.set_xlim(10.08, 10.16)
+    ax1.set_ylim(0.080, 0.082)
+    ax1.set_yticks([0.08, 0.081, 0.082])
 
-    if len(ia_occupied_pos_ok_loc) > 0:
-        ia_occupied_pos_ok = ia[0][ia_occupied_pos_ok_loc]
-    else:
-        ia_occupied_pos_ok = []
-    if len(ia_occupied_neg_ok_loc) > 0:
-        ia_occupied_neg_ok = ia[0][ia_occupied_neg_ok_loc]
-    else:
-        ia_occupied_neg_ok = []
-    ia_unoccupied_pos_ok = ia[0][ia_unoccupied_pos_ok_loc]
-    ia_unoccupied_neg_ok = ia[0][ia_unoccupied_neg_ok_loc]
+    ax2.set_xlabel("Electric Field Strength (V/km)")
+    ax2.set_ylabel("Current Through Relay (A)")
+    ax2.axhline(0.055, color="red", linestyle="-")
+    ax2.axhline(-0.055, color="red", linestyle="-")
+    ax2.set_ylim(-0.056, -0.054)
+    ax2.set_xlim(14.56, 14.62)
+    ax2.set_yticks([-0.056, -0.055, -0.054])
 
-    if len(ia_occupied_pos_mis_loc) > 0:
-        ia_occupied_pos_mis = ia[0][ia_occupied_pos_mis_loc]
-    else:
-        ia_occupied_pos_mis = []
-    if len(ia_occupied_neg_mis_loc) > 0:
-        ia_occupied_neg_mis = ia[0][ia_occupied_neg_mis_loc]
-    else:
-        ia_occupied_neg_mis = []
-    ia_unoccupied_pos_mis = ia[0][ia_unoccupied_pos_mis_loc]
-    ia_unoccupied_neg_mis = ia[0][ia_unoccupied_neg_mis_loc]
+    ax3.set_xlabel("Electric Field Strength (V/km)")
+    ax3.axhline(0.081, color="red", linestyle="-")
+    ax3.axhline(-0.081, color="red", linestyle="-")
+    ax3.set_ylim(-0.082, -0.08)
+    ax3.set_xlim(14.06, 14.12)
+    ax3.set_yticks([-0.082, -0.081, -0.08])
 
-    ax0.set_xlim(-1, 201)
-    ax0.set_ylim(-1, 1)
-    ax0.axhline(0.055, color='tomato')
-    ax0.axhline(-0.055, color='tomato')
-    ax0.axhline(0.081, color='limegreen', linestyle='--')
-    ax0.axhline(-0.081, color='limegreen', linestyle='--')
-    ax0.fill_between(range(-2, 220), 0.055, -0.055, color='tomato', alpha=0.1)
-    ax0.fill_between(range(-2, 220), 0.081, 10, color='limegreen', alpha=0.1)
-    ax0.fill_between(range(-2, 220), -0.081, -10, color='limegreen', alpha=0.1)
-    ax0.scatter(ia_unoccupied_pos_ok_loc, ia_unoccupied_pos_ok, marker='^', color='white', edgecolors='black', zorder=10)
-    ax0.scatter(ia_unoccupied_neg_ok_loc, ia_unoccupied_neg_ok, marker='v', color='white', edgecolors='black', zorder=10)
-    ax0.scatter(ia_occupied_pos_ok_loc, ia_occupied_pos_ok, marker='o', color='black', edgecolors='black', zorder=10)
-    ax0.scatter(ia_occupied_neg_ok_loc, ia_occupied_neg_ok, marker='o', color='black', edgecolors='black', zorder=10)
-    ax0.scatter(ia_unoccupied_pos_mis_loc, ia_unoccupied_pos_mis, marker='^', color='white', edgecolors='red', zorder=10)
-    ax0.scatter(ia_unoccupied_neg_mis_loc, ia_unoccupied_neg_mis, marker='v', color='white', edgecolors='red', zorder=10)
-    ax0.scatter(ia_occupied_pos_mis_loc, ia_occupied_pos_mis, marker='o', color='red', edgecolors='red', zorder=10)
-    ax0.scatter(ia_occupied_neg_mis_loc, ia_occupied_neg_mis, marker='o', color='red', edgecolors='red', zorder=10)
+    fig.legend(lines, labels, loc='lower center', fancybox=True, shadow=True, ncol=4)
 
-    x = np.arange(0, len(ia[1]))
-    occupied = [100]
-    occupied_pos = []
-    occupied_neg = []
-    unoccupied_pos = x[::2]
-    unoccupied_neg = x[1::2]
-    for occ in occupied:
-        if occ % 2 == 0:
-            occupied_pos.append(occ)
-            unoccupied_pos = np.delete(unoccupied_pos, np.where(unoccupied_pos == occ))
-        else:
-            occupied_neg.append(occ)
-            unoccupied_neg = np.delete(unoccupied_neg, np.where(unoccupied_neg == occ))
-
-    ia_occupied_pos = ia[1][occupied_pos]
-    ia_occupied_neg = ia[1][occupied_neg]
-    ia_unoccupied_pos = ia[1][unoccupied_pos]
-    ia_unoccupied_neg = ia[1][unoccupied_neg]
-
-    ia_unoccupied_pos_mis_loc = np.array(unoccupied_pos)[np.where((ia_unoccupied_pos < 0.055) & (ia_unoccupied_pos > -0.081))]
-    ia_unoccupied_neg_mis_loc = np.array(unoccupied_neg)[np.where((ia_unoccupied_neg > -0.055) & (ia_unoccupied_neg < 0.081))]
-    ia_occupied_pos_mis_loc = np.array(occupied_pos)[np.where((ia_occupied_pos > 0.081) | (ia_occupied_pos < -0.081))]
-    ia_occupied_neg_mis_loc = np.array(occupied_neg)[np.where((ia_occupied_neg > 0.081) | (ia_occupied_neg < -0.081))]
-    ia_unoccupied_pos_ok_loc = np.delete(unoccupied_pos, np.where((ia_unoccupied_pos < 0.055) & (ia_unoccupied_pos > -0.081)))
-    ia_unoccupied_neg_ok_loc = np.delete(unoccupied_neg, np.where((ia_unoccupied_neg > -0.055) & (ia_unoccupied_neg < 0.081)))
-    ia_occupied_pos_ok_loc = np.delete(occupied_pos, np.where((ia_occupied_pos > 0.081) | (ia_occupied_pos < -0.081)))
-    ia_occupied_neg_ok_loc = np.delete(occupied_neg, np.where((ia_occupied_neg > 0.081) | (ia_occupied_neg < -0.081)))
-
-    if len(ia_occupied_pos_ok_loc) > 0:
-        ia_occupied_pos_ok = ia[1][ia_occupied_pos_ok_loc]
-    else:
-        ia_occupied_pos_ok = []
-    if len(ia_occupied_neg_ok_loc) > 0:
-        ia_occupied_neg_ok = ia[1][ia_occupied_neg_ok_loc]
-    else:
-        ia_occupied_neg_ok = []
-    ia_unoccupied_pos_ok = ia[1][ia_unoccupied_pos_ok_loc]
-    ia_unoccupied_neg_ok = ia[1][ia_unoccupied_neg_ok_loc]
-
-    if len(ia_occupied_pos_mis_loc) > 0:
-        ia_occupied_pos_mis = ia[1][ia_occupied_pos_mis_loc]
-    else:
-        ia_occupied_pos_mis = []
-    if len(ia_occupied_neg_mis_loc) > 0:
-        ia_occupied_neg_mis = ia[1][ia_occupied_neg_mis_loc]
-    else:
-        ia_occupied_neg_mis = []
-    ia_unoccupied_pos_mis = ia[1][ia_unoccupied_pos_mis_loc]
-    ia_unoccupied_neg_mis = ia[1][ia_unoccupied_neg_mis_loc]
-
-    ax1.set_xlim(-1, 201)
-    ax1.set_ylim(-1, 1)
-    ax1.axhline(0.055, color='tomato')
-    ax1.axhline(-0.055, color='tomato')
-    ax1.axhline(0.081, color='limegreen', linestyle='--')
-    ax1.axhline(-0.081, color='limegreen', linestyle='--')
-    ax1.fill_between(range(-2, 220), 0.055, -0.055, color='tomato', alpha=0.1)
-    ax1.fill_between(range(-2, 220), 0.081, 10, color='limegreen', alpha=0.1)
-    ax1.fill_between(range(-2, 220), -0.081, -10, color='limegreen', alpha=0.1)
-    ax1.scatter(ia_unoccupied_pos_ok_loc, ia_unoccupied_pos_ok, marker='^', color='white', edgecolors='black', zorder=10, label="Unoccupied - No Misoperation")
-    ax1.scatter(ia_unoccupied_neg_ok_loc, ia_unoccupied_neg_ok, marker='v', color='white', edgecolors='black', zorder=10)
-    ax1.scatter(ia_occupied_pos_ok_loc, ia_occupied_pos_ok, marker='o', color='black', edgecolors='black', zorder=10, label="Occupied - No Misoperation")
-    ax1.scatter(ia_occupied_neg_ok_loc, ia_occupied_neg_ok, marker='o', color='black', edgecolors='black', zorder=10)
-
-    ax1.scatter(ia_unoccupied_pos_mis_loc, ia_unoccupied_pos_mis, marker='^', color='white', edgecolors='red', zorder=10, label="Unoccupied - Misoperation (Right-side)")
-    ax1.scatter(ia_unoccupied_neg_mis_loc, ia_unoccupied_neg_mis, marker='v', color='white', edgecolors='red', zorder=10)
-    ax1.scatter(ia_occupied_pos_mis_loc, ia_occupied_pos_mis, marker='o', color='red', edgecolors='red', zorder=10, label="Occupied - Misoperation (Wrong-side)")
-    ax1.scatter(ia_occupied_neg_mis_loc, ia_occupied_neg_mis, marker='o', color='red', edgecolors='red', zorder=10)
-
-    fig.legend(loc='lower center', fancybox=True, shadow=True, ncol=4)
-
-    def axis(ax):
-        ax.set_xlabel("Block Index")
-        ax.set_ylabel("Current Through Relay (A)")
-
-    axis(ax0)
-    axis(ax1)
-
+    #plt.savefig("leakage_rs.pdf")
     plt.show()
 
 
-plot()
+def plot_res_ws():
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 8))
+    gs = GridSpec(2, 2)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[1, 1])
+
+    axle_spacing = np.array([0, 2, 17.5, 19.5, 24, 26, 41.5, 43.5, 48, 50, 65.5, 67.5, 72, 74, 89.5, 91.5])/1000
+    res = [0.25, 0.035, 0.0289]
+    e_all = np.arange(-20, 20.1, 0.01)
+    lines = []
+    labels = []
+    for i in range(0, len(res)):
+        ia939, ib939 = rail_model_two_track_test(resistance=res[i], e_par=e_all, axle_pos_a=(68.34 + axle_spacing), axle_pos_b=np.array([]), relay_type="BR939A", electrical_staggering=False, cross_bonds=True)
+        ia966, ib966 = rail_model_two_track_test(resistance=res[i], e_par=e_all, axle_pos_a=(68.34 + axle_spacing), axle_pos_b=np.array([]), relay_type="BR966F2", electrical_staggering=False, cross_bonds=True)
+        line, = ax0.plot(e_all, ia939[:, 100])
+        ax1.plot(e_all, ia966[:, 100])
+        ax2.plot(e_all, ia939[:, 100])
+        ax3.plot(e_all, ia966[:, 100])
+        lines.append(line,)
+        labels.append(f'Resistance = {res[i]} ohm/km')
+
+    #ax0.set_xlabel("Electric Field Strength (V/km)")
+    ax0.set_ylabel("Current Through Relay (A)")
+    ax0.axhline(0.081, color="limegreen", linestyle="--")
+    ax0.axhline(-0.081, color="limegreen", linestyle="--")
+    ax0.set_title(f"BR939A Relay")
+
+    #ax1.legend()
+    #ax1.set_xlabel("Electric Field Strength (V/km)")
+    #ax1.set_ylabel("Current Through Relay (A)")
+    ax1.axhline(0.120, color="limegreen", linestyle="--")
+    ax1.axhline(-0.120, color="limegreen", linestyle="--")
+    ax1.set_title(f"BR966 F2 Relay")
+
+    #ax2.legend()
+    ax2.set_xlabel("Electric Field Strength (V/km)")
+    ax2.set_ylabel("Current Through Relay (A)")
+    ax2.axhline(0.081, color="limegreen", linestyle="--")
+    ax2.axhline(-0.081, color="limegreen", linestyle="--")
+
+    #ax3.legend()
+    ax3.set_xlabel("Electric Field Strength (V/km)")
+    #ax3.set_ylabel("Current Through Relay (A)")
+    ax3.axhline(0.120, color="limegreen", linestyle="--")
+    ax3.axhline(-0.120, color="limegreen", linestyle="--")
+
+    fig.legend(lines, labels, loc='lower center', fancybox=True, shadow=True, ncol=4)
+
+    #plt.savefig("leakage_ws.pdf")
+    plt.show()
+
+
+def plot_res_ws_currents():
+    plt.rcParams['font.size'] = '15'
+    fig = plt.figure(figsize=(14, 7))
+    gs = GridSpec(2, 2)
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[1, 1])
+
+    axle_spacing = np.array([0, 2, 17.5, 19.5, 24, 26, 41.5, 43.5, 48, 50, 65.5, 67.5, 72, 74, 89.5, 91.5]) / 1000
+    e_all = np.array([-5, 5])
+    res = np.linspace(0.0289, 0.25, 10)
+    ia939_all = np.zeros(len(res))
+    ia966_all = np.zeros(len(res))
+    ia939_all_p = np.zeros(len(res))
+    ia966_all_p = np.zeros(len(res))
+    for i in range(0, len(res)):
+        print(i)
+        ia939, ib939 = rail_model_two_track_test(resistance=res[i], e_par=e_all, axle_pos_a=(68.34 + axle_spacing), axle_pos_b=np.array([]), relay_type="BR939A", electrical_staggering=False, cross_bonds=True)
+        ia966, ib966 = rail_model_two_track_test(resistance=res[i], e_par=e_all, axle_pos_a=(68.34 + axle_spacing), axle_pos_b=np.array([]), relay_type="BR966F2", electrical_staggering=False, cross_bonds=True)
+        ia939_all[i] = ia939[0, 100]
+        ia966_all[i] = ia966[0, 100]
+        ia939_all_p[i] = ia939[1, 100]
+        ia966_all_p[i] = ia966[1, 100]
+
+    ax0.plot(res, ia939_all, label="E = -5 V/km")
+    ax1.plot(res, ia966_all, label="E = -5 V/km")
+    ax2.plot(res, ia939_all_p, label="E = 5 V/km")
+    ax3.plot(res, ia966_all_p, label="E = 5 V/km")
+
+    ax0.set_ylabel("Current Through Relay (A)")
+    ax0.set_title(f"BR939A Relay")
+    ax0.legend()
+
+    ax1.set_title(f"BR966 F2 Relay")
+    ax1.legend()
+
+    ax2.set_xlabel("Resistivity (ohm/km)")
+    ax2.set_ylabel("Current Through Relay (A)")
+    ax2.legend()
+
+    ax3.set_xlabel("Resistivity (ohm/km)")
+    ax3.legend()
+
+    #plt.savefig("leakage_rs.pdf")
+    plt.show()
+
+
+
+#plot_res_rs()
+#plot_res_ws()
+plot_res_ws_currents()

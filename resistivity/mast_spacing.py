@@ -1,4 +1,3 @@
-from generate_route_parameters import calculate_bearing, calculate_coordinates
 from geopy.distance import distance
 from geopy import Point as Point
 from shapely.geometry import Point as shapelyPoint
@@ -7,14 +6,90 @@ import numpy as np
 import geopandas as gpd
 from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
+from geographiclib.geodesic import Geodesic
+import math
+geod = Geodesic.WGS84  # Define the WGS84 ellipsoid
 
 
-def find_res_of_coordinates(lons, lats):
+def split_path_by_distance(route_name):
+    lo_la = np.load(f"../data/rail_data/{route_name}/{route_name}_block_lons_lats.npz")
+    lons = lo_la["lons"]
+    lats = lo_la["lats"]
+    mast_lons = [lons[0]]
+    mast_lats = [lats[0]]
+    mast_block_indices = []
+    leftover = 0
+    for i in range(0, len(lats) - 1):
+        # If part of the 60 m distance between masts runs over into the next block
+        if leftover != 0:
+            # Handle the part that runs over
+            l = geod.InverseLine(lats[i], lons[i], lats[i + 1], lons[i + 1])
+            s = leftover
+            g = l.Position(s, Geodesic.STANDARD | Geodesic.LONG_UNROLL)
+            mast_lons.append(g['lon2'])
+            mast_lats.append(g['lat2'])
+            mast_block_indices.append(i)
+            # Take the coordinate of that mast as the new start
+            l = geod.InverseLine(mast_lats[-1], mast_lons[-1], lats[i + 1], lons[i + 1])
+            n = int(math.ceil(l.s13 / 60))
+            for j in range(1, n + 1):
+                ds = 60
+                s = min(ds * j, l.s13)
+                g = l.Position(s, Geodesic.STANDARD | Geodesic.LONG_UNROLL)
+                # Do not add the end of block coordinate, we only need the mast coordinates
+                if j != n:
+                    mast_lons.append(g['lon2'])
+                    mast_lats.append(g['lat2'])
+                    mast_block_indices.append(i)
+                else:
+                    pass
+                # Calcuate distance that runs over into the next block
+                leftover = (ds * j) - s
+        # If there is no distance runs over the start of the block. (Probably only triggers once at the start)
+        else:
+            l = geod.InverseLine(lats[i], lons[i], lats[i + 1], lons[i + 1])
+            n = int(math.ceil(l.s13 / 60))
+            for j in range(1, n + 1):
+                ds = 60
+                s = min(ds * j, l.s13)
+                g = l.Position(s, Geodesic.STANDARD | Geodesic.LONG_UNROLL)
+                if j != n:
+                    mast_lons.append(g['lon2'])
+                    mast_lats.append(g['lat2'])
+                    mast_block_indices.append(i)
+                else:
+                    pass
+                leftover = (ds * j) - s
+
+    mast_lons = np.delete(mast_lons, 0)
+    mast_lats = np.delete(mast_lats, 0)
+
+    plt.rcParams['font.size'] = '15'
+    fig, ax = plt.subplots(figsize=(5, 10))
+    ax.plot(lons, lats, '.', zorder=6, color='orange', label='Block Ends')
+    ax.plot(mast_lons, mast_lats, '.', zorder=5, color='blue', label='Masts')
+    ax.legend()
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.show()
+
+    mast_block_indices = np.array(mast_block_indices)
+
+    np.savez(f"{route_name}_mast_lons_lats.npz", lons=mast_lons, lats=mast_lats)
+    np.save(f"{route_name}_mast_block_indices.npy", mast_block_indices)
+
+
+def find_res_of_coordinates(route_name, plot):
     # Load the shapefile
     shapefile_path = "../data/resistivity/BGSCivils_Resistivity_V1.shp"
     gdf = gpd.read_file(shapefile_path)
 
-    # Convert to WGS84 (if necessary)
+    # Load mast coordinates
+    lo_la = np.load(f"../data/resistivity/{route_name}_mast_lons_lats.npz")
+    lats = lo_la['lats']
+    lons = lo_la['lons']
+
+    # Convert to WGS84
     if gdf.crs != "EPSG:4326":
         gdf = gdf.to_crs(epsg=4326)
 
@@ -24,159 +99,67 @@ def find_res_of_coordinates(lons, lats):
     resistivities = []
     for i, res in enumerate(results):
         if not res.empty:
-            resistivities.append(res["A50"].values)
+            if res["A50"].values != 0:
+                resistivities.append(res["A50"].values)
+            else:
+                resistivities.append(resistivities[-1])
         else:
             print(f"Point {i} is not inside any polygon.")
             resistivities.append(resistivities[-1])
 
     resistivities = np.array(resistivities)
 
-    return resistivities
+    # Optional plotting
+    if plot:
+        plt.rcParams['font.size'] = '15'
+        fig, ax = plt.subplots(figsize=(6, 10))
+        gdf.plot(ax=ax, color='lightgray', edgecolor='black', alpha=0.5)
+        x, y = zip(*[(p.x, p.y) for p in points])
+        ax.scatter(x, y, color='blue', label='Masts', s=1, zorder=5)
+        if route_name == "west_coast_main_line":
+            oob_points = [points[i] for i in [6, 7, 2537, 2538]]
+            x, y = zip(*[(p.x, p.y) for p in oob_points])
+            ax.plot(x, y, 'x', color='red', zorder=6, label='No Data')
+        elif route_name == "east_coast_main_line":
+            oob_points = [points[i] for i in [1448, 1515, 1516]]
+            x, y = zip(*[(p.x, p.y) for p in oob_points])
+            ax.plot(x, y, 'x', color='red', zorder=6, label='No Data')
+        else:
+            pass
+        ax.legend()
+        plt.xlabel("Longitude")
+        plt.ylabel("Latitude")
+        plt.show()
 
-
-def split_path_by_distance(route_name):
-    lo_la = np.load(f"../data/rail_data/{route_name}/{route_name}_split_block_lons_lats.npz")
-    lons = lo_la["lons"]
-    lats = lo_la["lats"]
-
-    distances = []
-    bearings = []
-    block_indices = [9999]
-
-    dist_left = 0
-    for i in range(1, len(lons)):
-        # Compute distance
-        start = Point(lats[i - 1], lons[i - 1])
-        end = Point(lats[i], lons[i])
-        dist = distance(start, end).kilometers
-        # Compute bearing using a custom function
-        bearing = calculate_bearing(start, end)
-
-        while dist >= 0.06:
-            distances.append(0.06 - dist_left)
-            bearings.append(bearing)
-            block_indices.append(i-1)
-            dist -= 0.06
-            dist_left = 0
-
-        if dist < 0.06:
-            distances.append(dist)
-            bearings.append(bearing)
-            block_indices.append(9999)
-            dist_left = dist
-
-    lon_lats = np.load(f"../data/rail_data/{route_name}/{route_name}_lons_lats.npz")
-    lons_0 = lon_lats['lons']
-    lats_0 = lon_lats['lats']
-
-    lons_masts_and_ends, lats_masts_and_ends = calculate_coordinates(start_lat=lats_0[0], start_lon=lons_0[0], distances_km=distances, bearings_deg=bearings)
-    mast_locs = np.where(np.array(block_indices) != 9999)[0]
-    end_locs = np.where(np.array(block_indices) == 9999)[0]
-
-    resistivities_masts = find_res_of_coordinates(lons_masts_and_ends[mast_locs], lats_masts_and_ends[mast_locs])
-    block_indices_masts = np.array(block_indices)[mast_locs]
-
-    np.savez(f"{route_name}_mast_lons_lats.npz", lons=lons_masts_and_ends[mast_locs], lats=lats_masts_and_ends[mast_locs])
-    np.save(f"{route_name}_resistivities_masts.npy", resistivities_masts)
-    np.save(f"{route_name}_block_indices_masts.npy", block_indices_masts)
-
-    return resistivities_masts, block_indices_masts
-
-
-def split_path_by_distance_halved(route_name):
-    lo_la = np.load(f"../data/rail_data/{route_name}/{route_name}_split_block_lons_lats_halved.npz")
-    lons = lo_la["lons"]
-    lats = lo_la["lats"]
-
-    distances = []
-    bearings = []
-    block_indices = [9999]
-
-    dist_left = 0
-    for i in range(1, len(lons)):
-        # Compute distance
-        start = Point(lats[i - 1], lons[i - 1])
-        end = Point(lats[i], lons[i])
-        dist = distance(start, end).kilometers
-        # Compute bearing using a custom function
-        bearing = calculate_bearing(start, end)
-
-        while dist >= 0.06:
-            distances.append(0.06 - dist_left)
-            bearings.append(bearing)
-            block_indices.append(i-1)
-            dist -= 0.06
-            dist_left = 0
-
-        if dist < 0.06:
-            distances.append(dist)
-            bearings.append(bearing)
-            block_indices.append(9999)
-            dist_left = dist
-
-    lon_lats = np.load(f"../data/rail_data/{route_name}/{route_name}_lons_lats.npz")
-    lons_0 = lon_lats['lons']
-    lats_0 = lon_lats['lats']
-
-    lons_masts_and_ends, lats_masts_and_ends = calculate_coordinates(start_lat=lats_0[0], start_lon=lons_0[0], distances_km=distances, bearings_deg=bearings)
-    mast_locs = np.where(np.array(block_indices) != 9999)[0]
-    end_locs = np.where(np.array(block_indices) == 9999)[0]
-
-    resistivities_masts = find_res_of_coordinates(lons_masts_and_ends[mast_locs], lats_masts_and_ends[mast_locs])
-    block_indices_masts = np.array(block_indices)[mast_locs]
-
-    np.savez(f"{route_name}_mast_lons_lats_halved.npz", lons=lons_masts_and_ends[mast_locs], lats=lats_masts_and_ends[mast_locs])
-    np.save(f"{route_name}_resistivities_masts_halved.npy", resistivities_masts)
-    np.save(f"{route_name}_block_indices_masts_halved.npy", block_indices_masts)
-
-    return resistivities_masts, block_indices_masts
+    np.save(f"{route_name}_mast_resistivities.npy", resistivities)
 
 
 def calculate_leakage(route_name):
     data = np.load(f"../data/rail_data/{route_name}/{route_name}_distances_bearings.npz")
     blocks = data["distances"]
-    resistivities, block_indices = split_path_by_distance(route_name)
+
+    mast_resistivities = np.load(f"../data/resistivity/{route_name}_mast_resistivities.npy")
+    mast_block_indices = np.load(f"../data/resistivity/{route_name}_mast_block_indices.npy")
+
+    plt.plot(mast_resistivities)
+    plt.show()
+
     block_leaks = []
 
     # All blocks
     for i in range(0, len(blocks)):
-        locs = np.where(np.isin(block_indices, i))[0].astype(int)
-        mast_resistivity = resistivities[locs]
-        mast_admittance = 1 / (mast_resistivity * 0.137817)
+        locs = np.where(np.isin(mast_block_indices, i))[0].astype(int)
+        mast_resistivity = mast_resistivities[locs]
+        mast_admittance = 1 / (mast_resistivity * 0.126)
         total_block_admittance = np.sum(mast_admittance)
         block_leak = total_block_admittance / blocks[i]
         block_leaks.append(block_leak)
 
-    plt.plot(block_leaks)
-    plt.show()
-
-    np.save(f"{route_name}_leakage_by_block.npy", block_leaks)
-
-
-def calculate_leakage_halved(route_name):
-    data = np.load(f"../data/rail_data/{route_name}/{route_name}_distances_bearings_halved.npz")
-    blocks = data["distances"]
-    resistivities = np.load(f"../data/resistivity/{route_name}_resistivities_masts_halved.npy")
-    block_indices = np.load(f"../data/resistivity/{route_name}_block_indices_masts_halved.npy")
-    block_leaks = []
-
-    # All blocks
-    for i in range(0, len(blocks)):
-        locs = np.where(np.isin(block_indices, i))[0].astype(int)
-        mast_resistivity = resistivities[locs]
-        mast_admittance = 1 / (mast_resistivity * 0.137817)
-        total_block_admittance = np.sum(mast_admittance)
-        block_leak = total_block_admittance / blocks[i]
-        block_leaks.append(block_leak)
-
-    plt.plot(block_leaks, '.')
-    plt.show()
-
-    np.save(f"{route_name}_leakage_by_block_halved.npy", block_leaks)
+    np.save(f"{route_name}_leakage_block.npy", block_leaks)
 
 
 def plot_resistivity_along_line(route_name):
-    resistivities = np.load(f"../data/resistivity/{route_name}_resistivities_masts.npy")
+    resistivities = np.load(f"../data/resistivity/{route_name}_mast_resistivities.npy")
 
     cols = []
     for r in resistivities:
@@ -223,11 +206,12 @@ def plot_resistivity_along_line(route_name):
     ax0.legend(handles=legend_elements, loc='upper right')
 
     plt.yscale("log")
-    plt.savefig(f"resistivities_masts_{route_name}.pdf")
+    #plt.show()
+    plt.savefig(f"mast_resistivities_{route_name}.pdf")
 
 
 def plot_block_leakage(route_name):
-    leakage = np.load(f"../data/resistivity/{route_name}_leakage_by_block.npy")
+    leakage = np.load(f"../data/resistivity/{route_name}_leakage_block.npy")
     plt.rcParams['font.size'] = '15'
     fig = plt.figure(figsize=(10, 5))
     gs = GridSpec(1, 1)
@@ -247,32 +231,10 @@ def plot_block_leakage(route_name):
     plt.show()
 
 
-def block_leakage_histogram(route_name):
-    leakage = np.load(f"../data/resistivity/{route_name}_leakage_by_block.npy")
-    plt.rcParams['font.size'] = '15'
-    fig = plt.figure(figsize=(10, 8))
-    gs = GridSpec(1, 1)
-    ax0 = fig.add_subplot(gs[:, :])
-    bins = np.linspace(0, 9, 100)
-    ax0.hist(leakage, bins=bins)
-    ax0.set_xlabel("Leakage (S/km)")
-    ax0.set_ylabel("Number of Blocks")
-    if route_name == "glasgow_edinburgh_falkirk":
-        ax0.set_title("Glasgow to Edinburgh via Falkirk High")
-    elif route_name == "east_coast_main_line":
-        ax0.set_title("East Coast Main Line")
-    elif route_name == "west_coast_main_line":
-        ax0.set_title("West Coast Main Line")
-    else:
-        ax0.set_title(f"{route_name}")
-
-    plt.show()
-
-
 def res_leak_comb(route_name):
-    resistivities = np.load(f"../data/resistivity/{route_name}_resistivities_masts.npy")
-    leakage = np.load(f"../data/resistivity/{route_name}_leakage_by_block.npy")
-    block_numbers = np.load(f"../data/resistivity/{route_name}_block_indices_masts.npy")
+    resistivities = np.load(f"../data/resistivity/{route_name}_mast_resistivities.npy")
+    leakage = np.load(f"../data/resistivity/{route_name}_leakage_block.npy")
+    block_numbers = np.load(f"../data/resistivity/{route_name}_mast_block_indices.npy")
 
     blocks_pos = []
     for i in range(0, len(leakage)):
@@ -306,17 +268,16 @@ def res_leak_comb(route_name):
     ax1.set_xlabel("Block Index")
     ax1.set_ylabel(r"Leakage ($\mathrm{S \cdot km^{-1}}$)")
 
-    plt.savefig(f"res_leak_comb_{route_name}.pdf")
+    #plt.savefig(f"res_leak_comb_{route_name}.pdf")
     plt.show()
 
 
-#for name in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
-    #split_path_by_distance_halved(name)
-    #calculate_leakage_halved(name)
+for name in ["west_coast_main_line", "glasgow_edinburgh_falkirk", "east_coast_main_line"]:
+    #split_path_by_distance(name)
+    #find_res_of_coordinates(name, plot=False)
     #calculate_leakage(name)
     #plot_resistivity_along_line(name)
     #plot_block_leakage(name)
-    #block_leakage_histogram(name)
-    #res_leak_comb(name)
+    res_leak_comb(name)
 
 

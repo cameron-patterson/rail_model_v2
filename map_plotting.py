@@ -151,5 +151,6 @@ def plot_route_map(route_name):
 
 #plot_map_new()
 #plot_route_map("west_coast_main_line")
-#for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
+for sec in ["west_coast_main_line", "east_coast_main_line", "glasgow_edinburgh_falkirk"]:
 #    gen_shape_file(sec)
+    plot_route_map(sec)

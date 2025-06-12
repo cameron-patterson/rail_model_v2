@@ -2074,7 +2074,6 @@ def plot_rail_v():
     ax3 = fig.add_subplot(gs[3, 0], sharex=ax0)
     ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
     ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)
-
     ax0.plot(np.linspace(0, 100, 2), v_1[0:2, 100], color="grey", label="1km long rail")
     ax1.plot(np.linspace(0, 100, 11), v_10[0:11, 100], color="pink", label="10km long rail")
     ax2.plot(np.linspace(0, 100, 19), v_18[0:19, 100], color="orange", label="18km long rail")
