@@ -224,9 +224,9 @@ def axle_plot_test(name):
         plt.show()
 
 
-#for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
-#    generate_axle_positions_two_track_back_axle_block_centre(sec)
-#    generate_axle_positions_two_track_back_axle_at_end(sec)
+for sec in ["glasgow_edinburgh_falkirk", "east_coast_main_line", "west_coast_main_line"]:
+    generate_axle_positions_two_track_back_axle_block_centre(sec)
+    generate_axle_positions_two_track_back_axle_at_end(sec)
 
 #generate_axle_positions_two_track_timetable("east_coast_main_line")
 

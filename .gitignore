@@ -27,4 +27,4 @@
 /data/rail_data/west_coast_main_line/west_coast_main_line_lengths_angles.npz
 /data/rail_data/west_coast_main_line/west_coast_main_line.geojson
 /data/network_parameters/glasgow_edinburgh_falkirk/train_pos_day.npy
-/test.py
+/resistivity/test.py
