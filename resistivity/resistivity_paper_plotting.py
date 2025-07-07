@@ -893,3 +893,4 @@ for name in ['west_coast_main_line', 'glasgow_edinburgh_falkirk', 'east_coast_ma
     #plot_signal_rail_voltages(name)
     #plot_currents_ws(name)
     plot_thresholds_rs(name)
+    plot_thresholds_ws(name)
